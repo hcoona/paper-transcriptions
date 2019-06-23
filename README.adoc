@@ -18,4 +18,8 @@ I'd like to transcribe some valuable papers into LaTeX format for better reading
 | 10.1145/357401.357402
 | http://portal.acm.org/citation.cfm?doid=357401.357402
 
+| link:archive/10.1145_3003665.3003674.pdf[What's Really New with NewSQL?]
+| 10.1145/3003665.3003674
+| https://dl.acm.org/citation.cfm?doid=3003665.3003674
+
 |===
