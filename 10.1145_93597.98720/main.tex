@@ -1,0 +1,607 @@
+\PassOptionsToPackage{unicode=true}{hyperref} % options for packages loaded elsewhere
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[a4paper,11pt,notitlepage,twoside,openright]{article}
+
+\usepackage{ifxetex}
+\ifxetex
+\else
+  \errmessage{Must be built with xelatex}
+\fi
+
+\input{../common/fonts.tex}
+\input{../common/packages.tex}
+\input{../common/setup.tex}
+
+\title{Encapsulation of Parallelism in the Volcano Query Processing System}
+\author{Goetz Graefe}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  Volcano is a new dataflow query processing system we have developed for database systems research and education.
+  The uniform interface between operators makes Volcano extensible by new operators. All operators are designed and coded as
+  if they were meant for a single-process system only. When attempting to parallelize Volcano, we had to choose between two
+  models of parallelization, called here the \emph{bracket} and \emph{operator} models. We describe the reasons for not choosing the bracket
+  model, introduce the novel operator model, and provide details of Volcano's \emph{exchange} operator that parallelizes all other operators.
+  It allows intra-operator parallelism on partitioned datasets and both vertical and horizontal inter-operator parallelism. The
+  exchange operator encapsulates all parallelism issues and therefore makes implementation of parallel database algorithms significantly
+  easier and more robust. Included in this encapsulation is the translation between demand-driven dataflow within
+  processes and data-driven dataflow between processes. Since the interface between Volcano operators is similar to the one
+  used in ``real'', commercial systems, the techniques described here can be used to parallelize other query processing engine.
+\end{abstract}
+
+\section{Introduction}
+
+In order to provide a testbed for database systems
+education and research, we decided to implement an extensible
+and modular query processing system. One important
+goal was to achieve flexibility and extensibility without
+sacrificing efficiency. The result is a small system, consisting
+of less than two dozen core modules with a total of about
+\(15,000\) lines of C code. These modules include a file system,
+buffer management, sorting, top-down B+-trees, and
+two algorithms each for natural join, semi-join, outer join,
+anti-join, aggregation, duplicate elimination, division, union,
+intersection, difference, anti-difference, and Cartesian produce.
+Moreover, a single module allows parallel processing
+of all algorithms listed above.
+
+The last module, called the \emph{exchange} module, is the
+focus of this paper. It was designed and implemented \emph{after}
+most of the other query processing modules. The design
+goal was to parallelize all existing query processing algorithms
+without modifying their implementations.
+Equivalently, the goal was to allow parallelizing new algorithms
+not yet invented without requiring that these algorithms
+be implemented with concern for parallelism. This
+goal was met almost entirely, the only change to the existing
+modules concerned device names and numbers to allow
+horizontal partitioning over multiple disks, also called disk
+striping~{[25]}.
+
+Parallelizing a query evaluation engine using an
+operator is a novel idea earlier research projects used
+template processes that encompass specific operators. We
+call the new method of parallelizing the \emph{operator model}. In
+this paper, we describe this new method and contrast it
+with the method used in GAMMA and Bubba, which we
+call the \emph{bracket model}. Since we developed, implemented,
+and tested the operator model within the framework of the
+Volcano system, we will describe it as realized in Volcano.
+
+Volcano was designed to be extensible, its design and
+implementation follows many of the ideas outlined by
+Batory et al.\ for the GENESIS design~{[5]}. In this paper,
+we do not focus on or substantiate the claim to extensibility
+and instead refer the reader to~{[17]}, suffice it to point out
+that if new operators use and provide Volcano's standard
+interface between operators, they can easily be included in a
+Volcano query evaluation plan and parallelized by the
+exchange operator.
+
+Volcano's mechanism to synchronize multiple operators
+in complex query trees within a single process and to
+exchange data items between operators are very similar to
+many commercial database systems, e.g., Ingres and the
+System R family of database systems. Therefore, it seems
+fairly straightforward to apply the techniques developed for
+Volcano's exchange operator and outlined in this paper to
+parallelize the query processing engines of such systems.
+
+THis paper is organized as follows. In the following
+section, we briefly review previous work that influenced our
+design, and introduce the \emph{bracket} model of parallelization.
+In Section 3, we provide a more detailed description of
+Volcano. The \emph{operator} model of parallelization and
+Volcano's \emph{exchange} operator are described in Section 4.
+We present experimental performance measurements in Section 5
+that show the \emph{exchange} operator's low overhead.
+Section 6 contains a summary and our conclusions from this effort.
+
+\section{Previous Work}
+
+Since so many different system have been developed
+to process large dataset efficiently, we only survey the systems
+that have strongly influenced the design of Volcano.
+
+At the start in 1987, we felt that some decisions in
+WiSS~{[11]} and GAMMA~{[12]} were not optimal for performance
+or generality. For instance, the decisions to protect
+WiSS's buffer space by copying a data record in or out for
+each request and to re-request a buffer page for every
+record during a scan seemed to inflict too much overhead.\footnote{
+  This statement only pertains to the original version of
+  WiSS as described in~{[11]}. Both decisions were reconsidered for
+  the version of WiSS used in GAMMA.
+}
+However, many of the design decisions in Volcano were
+strongly influenced by experiences with WiSS and
+GAMMA.The design of the data exchange mechanism
+between operators, the focus of this paper, is one of the
+few radical departures from GAMMA's design.
+
+During the design of the EXODUS storage manager~{[10]},
+many of these issues were revisited. Lessons learned
+and tradeoffs explored in these discussions certainly helped
+form the ideas behind Volcano. The development of E~{[24]}
+influenced the strong emphasis on iterators for query processing.
+The design of GENESIS~{[5]} emphasized the
+importance of a uniform iterator interface.
+
+Finally, a number of conventional (relational) and
+extensible systems have influenced our design. Without
+further discussion, we mention Ingres~{[27]}, System R~{[3]},
+Bubba~{[2]}, Starburst~{[26]}, Postgres~{[28]}, and XPRS~{[29]}.
+Furthermore, there has been a large amount of research and
+development in the database machine area, such that there
+is an international workshop on the topic. ALmost all database
+machine proposals and implementations utilize parallelism
+in some form. We certainly have learned from this
+work and tried to include its lessons in the design and
+implementation of Volcano. In particular, we have strived
+for simplicity in the design, \emph{mechanisms} that can support a
+multitude of \emph{policies}, and efficiency in all details. We
+believe that the query execution engine should provide
+mechanisms, and that the query optimizer should incorporate
+and decide on policies.
+
+Independently of our work, Tandern Computers has
+designed an operator called the \emph{parallel operator} which is
+very similar to Volcano's exchange operator. It has proven
+useful in Tandern's query execution engine~{[14]}, but is not
+yet documented in the open literature. We learned about
+this operator through one of the referees. Furthermore, the
+distributed database system R* used a technique similar to
+ours to transfer data between nodes~{[31]}. However, this
+operation was used only to effect data transfer and did not
+support data or intra-operator parallelism.
+
+\section{The Bracket Model of Parallelization}
+
+When attempting to parallelize existing single-process,
+Volcano software, we considered two paradigms or models
+of parallelization. The first one, which we call the \emph{bracket model},
+has been used in a number of systems, for example,
+GAMMA~{[12]} and Bubba~{[2]}. The second one, which we
+call the \emph{operator model}, is novel and is described in detail
+in Section 4.
+
+In the bracket model, there is a generic process template
+that can receive and send data and can execute
+exactly one operator at any point of time. A schematic
+diagram of such a template process is shown in \autoref{fig1}
+with two possible operators, join and aggregation. The
+code that makes up the generic template invokes the operator
+which then controls execution, network I/O on the
+receiving and sending sides are performed as service to the
+operator on request, implemented as procedures to be called
+by the operator. The number of inputs that can be active
+at any point of time is limited to two since there are only
+unary and binary operators in most database systems. The
+operator is surrounded by generic template code which
+shields it from its environment, for example the operator(s)
+that produce its input and consume its output.
+
+\begin{figure}
+  \centering
+  \includegraphics{fig1.png}
+  \caption{Bracket Model of Parallelization.\label{fig1}}
+\end{figure}
+
+One problem with the bracket model is that each
+locus of control needs to be created. This is typically done
+by a separate scheduler process, requiring software development
+beyond the actual operators, both initially and for each
+extension to the set of query processing algorithms. Thus,
+the bracket model seems unsuitable for an extensible system.
+
+In a query processing system using the bracket
+model, operators are coded in such a way that network I/O
+is their only means of obtaining input and delivering output
+(with the exception of scan and store operators). The reason
+is that each operator is its own locus of control and
+network flow control must be used to coordinate multiple
+operators, e.g., to match two operators' speed in a
+producer-consumer relationship. Unfortunately, this also
+means that passing a data item from one operator to
+another always involves expensive inter-process communication
+(IPC) system calls, even in the cases when an entire
+query is evaluated on a single machine (and could therefore
+be evaluated without IPC in a single process) or when data
+do not need to be repartitioned among nodes in a network.
+An example for the latter is the three-way join query
+``joinCselAselB'' in the Wisconsin Benchmark~{[6,9]} which
+uses the same join attribute for both two-way joins. Thus,
+in queries with multiple operators (meaning almost all
+queries), IPS and its overhead are mandatory rather than optional.
+
+In most (single-process) query processing engines,
+operators schedule each other much more efficiently by
+means of procedure calls rather the system calls. The concepts
+and methods needed for operators to schedule each
+other using procedure calls are the subject of the next section.
+
+\section{Volcano System Design}
+
+In this section, we provide an overview of the
+modules in Volcano. Volcano's file system is rather conventional.
+It includes a modules to manage devices, buffer
+pools, files, records, and B+-trees. For a detailed discussion,
+we refer to~{[17]}.
+
+The file system routines are used by the query processing
+routines to evaluate complex query plans. Queries
+are expressed as complex algebra expressions, the operators
+of this algebra are query processing algorithms. ALl algebra
+operators are implemented as \emph{iterators}, i.e., they support a
+simple \emph{open-next-close} protocol similar to conventional file scans.
+
+Associated with each algorithm is a \emph{state record}.
+The arguments for the algorithms are kept in the state
+record. All operations on records, e.g., comparisons and
+hashing, are performed by \emph{support functions} which are given
+in the state records as arguments to the iterators. Thus, the
+query processing modules could be implemented without
+knowledge or constraint on the internal structure of data objects.
+
+In queries involving more than one operator (i.e.,
+almost all queries), state records are linked together by
+means of \emph{input} pointers. The input pointers are also kept
+in the state records. They are pointers to a \emph{QEP} structure
+that consists of four pointers to the entry points of the
+three procedures implementing the operator (\emph{open}, \emph{next}, and
+\emph{close}) and a state record. All state information for an
+iterator is kept in its state record, thus, an algorithm may
+be used multiple times in a query by including more than
+one state record in the query. An operator does not need
+to know what kind of operator procedures its input, and
+whether its input comes from a complex query tree or from
+a simple file scan. We call this concept \emph{anonymous inputs}
+or \emph{streams}. Streams are a simple but powerful abstraction
+that allows combining any number of operators to evaluate
+a complex query. Together with the iterator control paradigm,
+streams represent the most efficient execution model
+in terms of time (overhead for synchronizing operators) and
+space (number of records that must reside in memory at
+any point of time) for single process query evaluation.
+
+Calling \emph{open} for the top-most operator results in
+instantiations for the associated state record, e.g., allocation
+of a hash table, and in \emph{open} calls for all inputs. In this
+way, all iterators in a query are initiated recursively. In
+order to process the query, \emph{next} for the top-most operator is
+called repeatedly until it fails with an \emph{end of stream} indicator.
+Finally, the \emph{close} call recursively ``shuts down'' all
+iterators in the query. This model of query execution
+matches very closely the one being included in the E programming
+language design~{[24]} and the algebraic query
+evaluation system of the Starburst extensible relational database system~{[22]}.
+
+The tree-structured query evaluation plan is used to
+execute queries by demand-driven dataflow. The return
+value of \emph{next} is, besides a status value, a structure called
+\texttt{NEXT\_RECORD} that consists of a record identifier and a
+record address in the buffer pool. This record is pinned
+(fixed) in the buffer. The protocol about fixing and unfixing
+records is as follows. Each record pinned in the buffer
+is \emph{owned} by exactly one operator at any point in time.
+After receiving a record, the operator can hold on to it for
+a while, e.g., in a hash table, unfix it, e.g., when a predicate
+fails, or pass it on to the next operators. Complex
+operations like join that create new records have to fix
+them in the buffer before passing them on, and have to
+unfix their input records.
+
+For intermediate results, Volcano uses \emph{virtual devices}.
+Pages of such a device exist only in the buffer, and are
+discarded when unfixed. Using this mechanism allows
+assigning unique RID's to intermediate result records, and
+allows managing such records in all operators as if they
+resided on a real (disk) device. The operators are not
+affected by the use of virtual devices, and can be programmed
+as if all input comes from a disk-resident file and
+output is written to a disk file.
+
+\section{The Operator Model of Parallelization}
+
+When porting Volcano to a multi-processor machine,
+we felt it desirable to use the single-process query processing
+code described above \emph{without any change}. The result is
+very clean, self-scheduling parallel processing. We call this
+novel approach the \emph{operator model} of parallelizing a query
+evaluation engine. In this model, all issues of control are
+localized in one operator that uses and provides the standard
+iterator interface to the operators above and below in a
+query tree.
+
+The model responsible for parallel execution and
+synchronization is called the \emph{exchange} iterator in Volcano.
+Notice that it is an iterator with \emph{open}, \emph{next} and \emph{close}
+procedures, therefore, it can be inserted at any one place or at
+multiple places in a complex query tree. \autoref{fig2} shows a
+complex query execution plan that includes data processing
+operators, e.g. file scan and join, and exchange operators.
+
+\begin{figure}
+  \centering
+  \includegraphics{fig2.png}
+  \caption{Operator Model of Parallelization\label{fig2}}
+\end{figure}
+
+This section describes how the \emph{exchange} iterator
+implements vertical and horizontal parallelism followed by a
+detailed example and a discussion of alternative modes of
+operation of Volcano's \emph{exchange} operator.
+
+\subsection{Vertical Parallelism}
+
+The first function of exchange is to provide \emph{vertical
+parallelism} or pipelining between processes. The \emph{open}
+procedure creates a new process after creating a data structure
+in shared memory called a \emph{port} for synchronization and data
+exchange. The child process, created using the UNIX \emph{fork}
+system call, is an exact duplicate of the parent process.
+The exchange operator then takes different paths in the
+parent and child process.
+
+The parent process serves as the \emph{consumer} and the
+child process as the \emph{producer} in Volcano. The exchange
+operator in the consumer process acts as a normal iterator,
+the only difference from other iterators is that it receives its
+input via inter-process communication rather than iterator
+(procedure) calls. After creating the child process,
+\texttt{open\_exchange} in the consumer is done. \texttt{next\_exchange}
+waits for data to arrive via the port and returns them a
+record at a time. \texttt{close\_exchange} informs the producer that
+it can close, waits for an acknowledgement, and returns.
+
+The exchange operator in the producer process
+becomes the \emph{driver} for the query tree below the exchange
+operator using \emph{open}, \emph{next}, and \emph{close} on its input. The output
+of \emph{next} is collected in \emph{packets}, which are arrays of
+\texttt{NEXT\_RECORD} structures. The packet size is an argument
+in the exchange iterator's state record, and can be set
+between \(1\) and \(32,000\) records. When a packet is filled, it
+is inserted into a linked list originating in the \emph{port} and a
+semaphore is used to inform the consumer about the new
+packet. Records in packets are fixed in the shared buffer
+and must be unfixed by a consuming operator.
+
+When its input is exhausted, the exchange operator in
+the producer process marks the last packet with an \emph{end-of-stream}
+tag, passes it to the consumer, and waits until the
+consumer allows closing all open files. This delay is
+necessary in Volcano because files on virtual devices must
+not be closed before all their records are unpinned in the
+buffer. In other words, it is a peculiarity due to other
+design decisions in Volcano rather than inherent in the
+exchange iterator or the operator model of parallelization.
+
+The alert reader has noticed that the exchange model
+uses a different dataflow paradigm than all other operators.
+While all other modules are based on demand-driven
+dataflow (iterators, lazy evaluation), the producer-consumer
+relationship of exchange uses data-driven dataflow (eager
+evaluation). There are two reasons for this change in paradigms.
+First, we intend to use the exchange operator also
+for \emph{horizontal parallelism}, to be described below, which is
+easier to implement with data-driven dataflow. Second, this
+scheme removes the need for request messages. Even
+though a scheme with request messages, e.g., using a semaphore,
+would probably perform acceptably on a shared-memory
+machine, we felt that it creates unnecessary control
+overhead and delays. Since we believe that very hight
+degrees of parallelism and very high-performance query
+evaluation require a closely tied network, e.g., a hypercube,
+of shared-memory machines, we decided to use a paradigm
+for data exchange that has has been proven to perform well
+in a shared-nothing database machine~{[12,13]}.
+
+A run-time switch of exchange enables \emph{flow control}
+or \emph{back pressure} using an additional semaphore. If the
+producer is significantly faster than the consumer, the producer
+may pin a significant portion of the buffer, thus impeding
+overall system performance. If flow control is enabled,
+after a producer has inserted a new packet into the port, it
+must request the flow control semaphore. After a consumer
+has removed a packet from the port, it releases the flow
+control semaphore. The initial value of the flow control
+semaphore, e.g., $4$, determines how many packets the
+producers may get ahead of the consumers.
+
+Notice that flow control and demand-driven dataflow
+are not the same. One significant difference is that flow
+control allows some ``slack'' in the synchronization of
+producer and consumer and therefore truly overlapped execution,
+while demand-driven dataflow is a rather rigid structure
+of request and delivery in which the consumer waits
+while the producer works on its next output. The second
+significant difference is that data-driven dataflow is easier to
+combine efficiently with horizontal parallelism and partitioning.
+
+\subsection{Horizontal Parallelism}
+
+There are two forms of horizontal parallelism which
+we call \emph{bushy parallelism} and \emph{intra-operator} parallelism. In
+bushy parallelism, different CPU's execute different subtrees
+of a complex query tree. Bushy parallelism and vertical
+parallelism are forms of \emph{inter-operator} parallelism. Intra-operator
+parallelism means that several CPU's perform the
+same operator on different subsets of a stored dataset or an
+intermediate result\footnote{%
+A fourth form of parallelism is inter-query parallelism,
+i.e., the ability of a database management system to work on
+several queries concurrently. In the current version, Volcano
+does not support inter-query parallelism. A fifth and sixth form
+of parallelism that can be used for database operations involve
+hardware vector processing~{[30]} and pipelining in the instruction
+execution. Since Volcano is a software architecture and following
+the analysis in~{[8]}, we do not consider hardware parallelism further.
+}.
+
+Bushy parallelism can easily be implemented by
+inserting one or two exchange operators into a query tree.
+For example, in order to sort two inputs into a merge-join
+in parallel, the first or both inputs are separated from the
+merge-join by an exchange operation\footnote{%
+In general, sorted streams can be piped directly into the
+join, both in the single-process and the multi-process case
+Volcano's sort operator includes a parameter ``final merge fan-in''
+that allows sharing the merge space by two sort operators performing
+the final merge in an interleaved fashion as requested by
+the merge join operator.
+}. The parent process
+turns to the second sort immediately after forking the child
+process that will produce the first input in sorted order.
+Thus, the two sort operations are working in parallel.
+
+Intra-operator parallelism requires data partitioning.
+Partitioning of stored datasets is achieved by using multiple
+files, preferably on different devices. Partitioning of intermediate
+results is implemented by including multiple queues
+in a port. If there are multiple consumer processes, each
+uses its own input queue. The producers use a support
+function to decide into which of the queues (or actually.
+into which of the packets being filled by the producer) an
+output record must go. Using a support function allows
+implementing round-robin-, key-range-, or hash-partitioning.
+
+If an operator or an operator subtree is executed in
+parallel by a \emph{group} of processes, one of them is designated
+the \emph{master}. When a query tree is \emph{opened}, only one process
+is running, which is naturally the master. When a master
+forks a child process in a producer-consumer relationship,
+the child process becomes the master within its group. The
+first action of the master producer is to determine how
+many slaves are needed by calling an appropriate support
+function. If the producer operation is to run in parallel, the
+master producer forks the other producer processes.
+
+Gerber pointed out that such a centralized scheme is
+suboptimal for high degrees of parallelism~{[15]}. When we
+changed our initial implementation from forking all producer
+processes by the master to using a \emph{propagation tree} scheme,
+we observed significant performance improvements. In such
+a scheme, the master forks one slave, then both fork a new
+slave each, then all four fork a new slave each, etc. This
+scheme has been used very effectively for broadcast communication
+and synchronization in binary hypercubes.
+
+Even after optimizing the forking scheme, its overhead
+is not negligible. We have considered using \emph{primed}
+processes, i.e., processes that are always present and wait
+for work packets. Primed processes are used in many commercial
+database systems. Since portable distribution of
+complied code (for support functions) is not trivial, we
+delayed this change and plan on using primed processes
+only when we move to an environment with multiple
+shared-memory machines\footnote{%
+In fact, this work is currently under way.
+}. Others have also observed the
+high cost of process creation and have provided alternatives,
+in particular ``light-weight'' processes in various forms. e.g.,
+in Mach~{[1]}.
+
+After all producer processes are forked. they run
+without further synchronization among themselves. with two
+exceptions. First. when accessing a shared data structure,
+e.g., the port to the consumers or a buffer table, short-term
+locks must be acquired for the duration of one liked-list
+insertion. Second, when a producer group is also a consumer
+group, i.e., there are at least two exchange operators
+and three process groups involved in a vertical pipeline, the
+processes that are both consumers and producers synchronize
+twice. During the (very short) interval between synchronizations,
+the master of this group creates a port which serves
+aU processes in its group.
+
+When a \emph{close} request is propagated down the tree
+and reaches the first exchange operator, the master
+consumer's \texttt{close\_exchange} procedure informs all producer
+processes that they are allowed to close down using the
+semaphore mentioned above in the discussion on vertical
+parallelism. If the producer processes are also consumers,
+the master of the process group informs its producers, etc.
+In this way, all operators are shut down in an orderly
+fashion, and the entire query evaluation is self-scheduling.
+
+\subsection{An Example}
+
+Let us consider an example. Assume a query with
+four operators, \(A\), \(B\), \(C\), and \(D\) such that \(A\) calls \(B\)'s, \(B\)
+calls \(C\)'s, and \(C\) calls \(D\)'s \emph{open}, \emph{close}, and \emph{next} procedures.
+Now assume that this query plan is to be run in
+three process groups, called \(A\), \(BC\), and \(D\). This requires
+an exchange operator between operators \(A\) and \(B\), say \(X\),
+and one between \(C\) and \(D\), say \(Y\). \(B\) and \(C\) continue to
+pass records via a simple procedure call to the \(C\)'s \emph{next}
+procedure without crossing process boundaries. Assume
+further that \(A\) runs as a single process, \(A_0\), while \(BC\) and
+\(D\) run in parallel in processes \(BC_0\) to \(BC_2\) and \(D_0\) to \(D_3\),
+for a total of eight processes.
+
+A calls $X$'s \emph{open}, \emph{close}, and \emph{next} procedures instead
+of $B$'s~(Figure 3a), without knowledge that a process boundary
+will be crossed, a consequence of anonymous inputs in
+Volcano When $X$ is opened, it creates a port with one
+mput queue for $A_0$ and forks $BC_0$~(Figure 3b), which in
+turn forks $BC_1$ and $BC_2$~(Figure 3c). When the $BC$ group
+\emph{opens} $Y$, $BC_0$ to $BC_2$ synchronize, and wait until the $Y$
+operator in process $BC_0$ has initialized a port with three
+input queues. $BC_0$ creates the port and stores its location
+at an address known only to the $BC$ processes. Then $BC_0$
+to $BC_2$ synchronize again, and $BC_1$ and $BC_2$ get the port
+information from its location. Next, $BC_0$ forks $D_0$~(Figure 3d)
+which in turn forks $D_1$ to $D_3$~(Figure 3e).
+
+\begin{figure}
+  \centering
+  \includegraphics{fig3.png}
+\end{figure}
+
+When the $D$ operators have exhausted their inputs in
+$D_0$ to $D_3$, they return an \emph{end-of-stream} indicator to the
+driver parts of $Y$. In each $D$ process, $Y$ flags its last
+packets to each of the $BC$ processes (i.e. a total of \(3\times{}4=12\)
+flagged packets) with an \emph{end-of-stream} tag and then waits
+on a semaphore for permission to \emph{close}. The copies of the
+$Y$ operator in the $BC$ processes count the number of tagged
+packets, after four tags (the number of producers or $D$
+processes), they have exhausted their inputs, and a call by
+$C$ to $Y$'s \emph{next} procedure will return an \emph{end-of-stream}
+indicator. In effect, the \emph{end-of-stream} indicator has been
+propagated from the $D$ operators to the $C$ operators. In due
+turn, $C$, $B$, and then the driver part of $X$ will receive an
+\emph{end-of-stream} indicator. After receiving three tagged packets,
+$X$'s \emph{next} procedure in $A_0$ will indicate \emph{end-of-stream}
+to $A$.
+
+When \emph{end-of-stream} reaches the root operator of the
+query, $A$, the query tree is closed. Closing the exchange
+operator $X$ includes releasing the semaphore that allows the
+$BC$ processes to shut down~(Figure 3f). The $X$ driver in
+each $BC$ process \emph{closes} its input, operator $B$. $B$ \emph{closes} $C$,
+and $C$ \emph{closes} $Y$. Closing $Y$ in $BC_1$ and $BC_2$ is an empty
+operation. When the process $BC_0$ \emph{closes} the exchange
+operator $Y$, $Y$ permits the $D$ processes to shut down by
+releasing a semaphore. After the processes of the $D$ group
+have closed all files and deallocated all temporary data
+structures, e.g., hash tables, they indicate the fact to $Y$ in
+$BC_0$ using another semaphore, and $Y$'s \emph{close} procedure
+returns to its caller, $C$'s \emph{close} procedure, while the $D$
+processes terminate~(Figure 3g). When all $BC$ processes
+have \emph{closed} down, $X$'s \emph{close} procedure indicates the fact to
+$A_0$ and query evaluation terminates~(Figure 3h).
+
+\subsection{Variants of the Exchange Operator}
+
+There are a number of situations for which the
+\emph{exchange} operator described so far required some modifications
+or extensions. In this section, we outline additional
+capabilities implemented in Volcano’s exchange operator.
+
+\end{document}
