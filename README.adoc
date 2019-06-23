@@ -1,0 +1,21 @@
+= Paper Transcriptions
+Shuai Zhang<zhangshuai.ustc@gmail.com>
+
+Some papers are quite old or not well-maintained so that only blurred scanning version available now.
+
+I'd like to transcribe some valuable papers into LaTeX format for better reading. This could be helpful for other people who also need to read them.
+
+== Index
+
+[cols=3*,options="header"]
+|===
+
+| Name
+| DOI
+| Original Link
+
+| link:archive/10.1145_357401.357402.pdf[End-to-end arguments in system design]
+| 10.1145/357401.357402
+| http://portal.acm.org/citation.cfm?doid=357401.357402
+
+|===

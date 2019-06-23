@@ -1,0 +1,50 @@
+
+\hypersetup{
+  bookmarksnumbered,
+  pdfborder={0 0 0},
+  pdfpagemode=UseNone,
+  pdfstartview=FitH,
+  breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+
+\usetikzlibrary{arrows.meta,shapes.geometric,shapes.misc}
+
+\newminted{java}{%
+  autogobble,
+  breakbytokenanywhere,
+  breaklines,
+  fontsize=\footnotesize,
+}
+\newmintinline{java}{%
+  autogobble,
+  breakbytokenanywhere,
+  breaklines,
+  fontsize=\footnotesize,
+}
+
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\setcounter{secnumdepth}{3}
+
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+% set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
