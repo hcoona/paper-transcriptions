@@ -643,7 +643,7 @@ order to merge multiple sorted streams correctly.
 We modified the \emph{exchange} module such that it can
 keep the input records separated according to their producers,
 switched by setting an argument field in the state
-record. A third argument to \texttt{next_exchange} is used to communicate
+record. A third argument to \texttt{next\_exchange} is used to communicate
 the required producer from the \emph{merge} to the
 \emph{exchange} iterator. Further modifications included increasing
 the number of input buffers used by exchange, the number
@@ -710,6 +710,385 @@ easy parallel implementation of new algorithms.
 
 \section{Overhead and Performance}
 
+From the beginning of the Volcano project, we were
+very concerned about performance and overhead. In this
+section, we report on experimental measurements of the
+overhead induced by the exchange operator. This is not
+meant to be an extensive or complete analysts of the
+operator's performance and overhead, the purpose of this
+section is to demonstrate that the overhead can be kept in
+acceptable limits.
 
+We measured elapsed times of a program that creates
+records, fills them with four random integers, passes the
+records over three process boundaries, and then unfixes the
+records in the buffer. The measurements are elapsed times
+on a Sequent Symmetry with twelve Intel \SI{16}{\mega\hertz} 80386
+CPU's. This is a shared-memory machine with a \SI{64}{KB}
+cache for each CPU. Each CPU delivers about \SI{4}{MIPS} in
+that machine. The times were measured using the hardware
+microsecond clock available on such machines. Sequent's
+DYNIX operating system provides exactly the same interface
+as Berkeley 4.2 BSD or System V UNIX and runs
+(i.e., executes system calls) on all processors.
+
+First, we measured the program without any exchange
+operator. Creating $100,000$ records and releasing them in
+the buffer took $20.28$ seconds. Next, we measured the program
+with the exchange operator switched to the mode in
+which it does not create new processes. In other words,
+compared to the last experiment, we added the overhead of
+three procedure calls for each record. For this run, we
+measured $28.00$ seconds. Thus, the three exchange operators
+in this mode added $(\SI{28.00}{sec} - \SI{20.28}{sec}) / 3 / 100,000
+= \SI{25.73}{\micro sec}$ overhead per record and exchange operator.
+
+When we switched the exchange operator to create
+new processes, thus creating a pipeline of four processes,
+we observed an elapsed tune of $16.21$ seconds with flow
+control enabled, or $16.16$ seconds with flow control disabled.
+The fact that these times are less than the tune for
+single-process program execution indicates that data transfer
+using the exchange operator is very fast, and that pipelined
+multi-process execution is warranted.
+
+We were particularly concerned about the granularity
+of data exchange between processes and its impact on
+Volcano's performance. In a separate experiment, we reran
+the program multiple times varying the number of records
+per exchange packet. \autoref{tab-1} shows the performance for
+transferring $100,000$ records from a producer process group
+through two intermediate process groups to a single
+consumer process. Each of these three groups included
+three processes, thus, each of the producer processes created
+$33,333$ records. All these experiments were conducted with
+flow control enabled with tree ``slack'' packets per
+exchange We used different partitioning (hash) functions
+for each exchange iterator to ensure that records were passing
+along all possible data paths, not only along three
+independent pipelines.
+
+\begin{table}[hbtp]
+  \centering
+  \begin{tabu}{rr}
+    \toprule{}
+    Packet Size [Records] & Elapsed Time [Seconds]\\
+    \midrule{}
+    $1$ & $176.4$\\
+    $2$ & $97.6$\\
+    $5$ & $45.27$\\
+    $10$ & $27.67$\\
+    $20$ & $20.15$\\
+    $50$ & $15.71$\\
+    $100$ & $13.76$\\
+    $200$ & $12.87$\\
+    $250$ & $12.73$\\
+    \bottomrule{}
+  \end{tabu}
+  \caption{Exchange Performance\label{tab-1}}
+\end{table}
+
+As can be seen in \autoref{tag-1}, the performance penalty
+for very small packets was significant. The elapsed time
+was almost cut in half when the packet size was increased
+from $1$ to $2$ records, from $17.6$ seconds to $9.8$ seconds. As
+the packet size was increased further, the elapsed time
+shrank accordingly, to $15.71$ seconds for $50$ records per
+packet and $12.73$ seconds for $250$ records per packet.
+
+It seemed reasonable to speculate that for small packets,
+most of the elapsed time was spent on data exchange.
+To verify this hypothesis, we calculated regression and
+correlation coefficients of the number of data packets
+($100,000$ divided over the packet size) and the elapsed
+times. We found an intercept (base time) of $12.18$ seconds,
+a slope of $0.001654$ seconds per packet and a correlation
+of more than $0.99$. Considering that we exchanged data
+over three process boundaries and that on two of those
+boundaries there were three producers and three consumers,
+we estimate that the overhead was $\SI{1654}{\micro sec} / 1.667 = \SI{992}{\micro sec}$
+per packet and process boundary.
+
+Two conclusions can be drawn from these experiments.
+First, vertical parallelism can pay off even for very
+simple query plans if the overhead of data transfer is small.
+Second, since the packet size can be set to any value, the
+overhead of Volcano's exchange iterator is negligible.
+
+\section{Summary and Conclusions}
+
+We have described Volcano, a new query evaluation
+system, and how parallel query evaluation is encapsulated in
+a single module or operator. The system is operational on
+both single- and multi-processor systems, and has been used
+for a number in database query processing studies~{[19-21,23]}.
+
+Volcano utilized dataflow techniques within processes
+as well as between processes. Within a process, demand-driven
+dataflow is implemented by means of iterators.
+Between process, data-driven dataflow is used to exchange
+data between producers and consumers efficiently. If necessary,
+Volcano's data-driven dataflow can be augmented with
+flow control or back pressure. Horizontal partitioning is
+used both on stored and intermediate datasets to allow
+intra-operator parallelism. The design of the exchange
+operator embodies the parallel execution mechanism for
+vertical, bushy, and intra-operator parallelism, and it performs
+the transitions from demand-driven to data-driven
+dataflow and back.
+
+Using an operator to encapsulate parallelism as
+explored in the Volcano project has a number of advantages
+over the bracket model. First, it hides the fact that parallelism
+is used from all other operators. Thus, other operators
+can be implemented without consideration for parallelism.
+Second, since the exchange operator uses the same
+interface to its input and output, it can be placed anywhere
+in a tree and combined with any other operators. Hence, it
+can be used to parallelize new operators, and effectively
+combines extensibility and parallelism. Third, it does not
+require a separate scheduler process since scheduling
+(including initialization, flow control, and final clean-up) is
+part of the operator and therefore performed within the standard
+\emph{open-next-close} iterator paradigm. This turns into an
+advantage in two situations. When a new operator is
+integrated into the system, the scheduler and the template
+process would have to be modified, while the exchange
+operator does not require any modifications. When the system
+is ported to a new environment, only one module
+requires modifications, the exchange iterator, not two
+modules, the template process and the scheduler. Fourth, it
+does not require that operators in a parallel query evaluation
+system use IPC to exchange data. Thus, each process can
+execute an arbitrary subtree of a complex query evaluation
+plan. Fifth, a single process can have any number of
+inputs, not just one or two. Finally, the operator can be
+(and has been) implemented in such a way that it can multiplex
+a single process between a producer and a consumer
+in some respects, it efficiently implements application-specific
+co-routines or threads.
+
+We plan on several extensions of the exchange operator.
+First, we plan on extending our design and implementation
+to support both shared and distributed memory
+(``shared-nothing architecture'') and to allow combining these
+concepts in a closely tied network of shared-memory multi-computers
+while maintaining the encapsulation properties.
+This might require using a pool of ``pruned'' processes and
+interpreting support functions. We believe that in the long
+run, high-performance database machines, both for transaction
+and query processing, will employ this architecture.
+Second, we plan on devising a error and exception management
+scheme that makes exception notification and handling
+transparent across process and machine boundaries. Third,
+we plan on using the exchange operator to parallelize query
+processing in object-oriented database systems~{[l6]}. In our
+model, a complex object is represented in memory by a
+pointer to the root component (pinned in the buffer) with
+pointers to the sub-components (also pinned) and passed
+between operators by passing the root component~{[18]}.
+While the current design already allows passing complex
+objects in a shared-memory environment, more functionality
+ts needed in a distributed-memory system where objects
+need to be packaged for network transfer.
+
+Volcano is the first implemented query evaluation
+system that combines extensibility and parallelism. Encapsulating
+all parallelism issues into one module was essential
+to making this combination possible. The encapsulation of
+parallelism in Volcano allows for new query processing
+algorithms to be coded for single-process execution but run
+in a highly parallel environment without modifications. We
+expect that this will speed parallel algorithm development
+and evaluation significantly. Since the operator model of
+parallel query processing and Volcano's exchange operator
+encapsulates parallelism and both uses and provides an iterator
+interface similar to many existing database systems, the
+concepts explored and outlined in this paper may very well
+be useful in parallelizing other database query processing
+software.
+
+\section*{Acknowledgements}
+
+A number of friends and colleagues were great
+sounding boards during the design and implementation of
+parallelism in Volcano, most notably Frank Symonds and
+Leonard Shapiro, Jerry Borgvedt implemented a prototype
+distributed-memory exchange operator --- NSF supported
+this work with contracts IRI-8805200 and IRI-8912618.
+Sequent Computer Systems provided machine time for
+experiments on a large machine.
+
+\section*{References}
+
+\begin{enumerate}
+  \item
+  M Accena R Baron, W. Bolosky, D Golub, R.
+  Rashid, A Tevaruan and M Young, ``Mach, A New
+  Kernel Foundauon for UNIX Development'', Summer
+  Conference Proceedings 1986,
+  \item
+  W Alexander and G. Copelsnd, “PKUXSS and
+  Dataflow Control m Dtstnbuted Data-Intensive
+  Systems”, Proceedmgs of the ACM SlGhiOD
+  Conference, mcago, IL: June 1988, 90-98
+  \item
+  M M. Astrahan, M W. Blarga D. D Chsmberbn,
+  K. P. Eswaran, J. N. Gray, P. P. Gtiths, W. F.
+  Kmg, R. A Lone, P R. McJones, J W Mehl, G.
+  R Putzolu, I L Trager, B W Wade and V.
+  Watson, “System R* A Relauonal Approach to
+  Database Management”, ACM Tramuctwns on
+  Database Systems I, 2 (June 1976), 97-137.
+  \item
+  C. K. Baru, 0. Fneder, D. Kandlur and M Segal,
+  “Jam on a Cub Analyst, Sunulaaon, and
+  Implementauon”, Proceedings of the Sth Intertionai
+  Workhop on Database Machmes, 1987.
+  \item
+  D S. Batory, “GENESIS* A Project to Develop an
+  Extennble Database Managanent System”,
+  Proceedmgs of the Intel Workshop on Object-Orunted
+  Database Systems, Pacific Grove, CA, September
+  1986, 207-208.
+  \item
+  D. Bttton, D. J. DeWltt and C. Turbyfii
+  “Benchmarkmg Database Systems: A Systemaac
+  Approach”, Proceedmg of the Conference on Very
+  Large Datu Bees, Florence, Italy, October-November
+  1983, 8-19
+  \item
+  D. Button, H. Boral, D. J DeWltt and W. K.
+  Wtlhnson, “Parallel Algonthms for the Exccuaon of
+  Relaaonal Database Operatlona”, ACM Trumuctwm
+  on Database Systems 8, 3 (September 1983). 324-353
+  \item
+  H. Boral and D. J Dewitt, “Database Machmes. An
+  Idea Whose Tune Has Passed7 A Cnque of the
+  Future of Database Machmes”, Proceeding of the
+  InternatroMl Workshop on Database Machanes,
+  Mumch, 1983
+  \item
+  H. Boral and D J DeWitS “A Methodology for
+  Database System Performance Evaluatum”,
+  Proceeduags of the ACM SlG,kiOD Conference,
+  Boston, MA, June 1984, 176-185
+  \item
+  M J Carey, D J Dewitt, J E Richardson and E
+  J. Sheluta, “ObJect and File Management m the
+  EXODUS Extensible Database System“, Proceedmgs
+  of the Conference on Very Loge Data Bases, Kyotn,
+  Japan, August 1986, 91-100
+  \item
+  H T. Choy D J Dewitt, R H Katz and A. C.
+  w3, “Design and Implementataon of the Wtsconsm
+  Storage System”, Sojiware - Practrce and Experience
+  IS, 10 (October 1985), 943-962
+  \item
+  D J Dewitt, R H Gerber, G Graefe, M L.
+  Heytens, K B Kumar and M Murahknshna,
+  “GAMMA - A High Performance Dataflow Database
+  Machme”. Proceedings of the Confiuence on Very
+  L.arge Data Bases, Kyoto, Japan, August 1986. 228-
+  237
+  \item
+  D J DeWltt, S Ghandeharadlzeh, D Schneider, A
+  Bncker, H I Hslao and R Rasmussen, ‘The
+  Gamma Database *Machme ProJect”, IEEE
+  Tranwtrons on Knowledge and Data Engtneertng 2,
+  1 (March 1990)
+  \item
+  S Englert, J Gray, R Kocher and P Shah, “A
+  Benchmark of NonStop SQL Release 2 Demonsuatmg
+  Near-Lmear Speedup and Scaleup on Large
+  Databases”, Tandem Computer Systems Techntcal
+  Report 894 (May 1989)
+  \item
+  R Gerber, “Dataflow Query Processmg usmg
+  Mulbprocessor Hash-Partmoned Algomhms”, Ph.D
+  Thests, Maduon. October 1986
+  \item
+  G Graefe and D M;uer, “Query Optmuzauon m
+  ObJect-Oriented Database Systems A Prospectus”, m
+  Advances VI Object-Oriented Database Systems, voi
+  334 K. R Dltmch (ednor), Spnnger-Valag,
+  Septenber 1988, 358-363
+  \item
+  G. Graefe, “Volcano An Extensible and Parallel
+  Dataflow Query Processmg System”, Oregon
+  Graduate Center, Computer Scrence Techntcal Report,
+  Beaverton, OR, June 1989
+  \item
+  G Graefe, “Set Rocessmg and Complex ObJect
+  Assembly 111 Volcano and the REVELATION
+  ProJect”, Oregon Graduate Center, Computer Sctexe
+  Techntcai Report, Beaverton, OR, June 1989
+  \item
+  G. Graefe, “Relational Dl~lsioh Four Algonthms
+  and Theu Performance”, Proceedmgs of the IEEE
+  Conference on Data Engtneertng, LAX Angeles, CA,
+  February 1989, 94-101
+  \item
+  G. Graefe and K Ward, “Dynarmc Query Evaluation
+  Plans”, Proceedings of the ACM SIGMOD
+  Conference, Portland, OR, May-June 1989, 358
+  \item
+  G Graefe, “Parallel External Sornng m Volcano”,
+  submrtted for pubhcatton, February 1990
+  \item
+  L. M Haas, W F Cody, J C Freytag, G Laps, B
+  G. Lmdsay, G. M Lohman, K Ono and H Puahesh,
+  “An Extensible Processor for an Extended Relatmnal
+  Quay Language”, Computer Science Research
+  Report, San Jose, CA, April 1988
+  \item
+  T Keller and G Graefe, “The One-to-One Match
+  Operator of the Volcano Query Processmg System”,
+  Oregon Graduate Center, Computer Saence Techrucal
+  Report, Beaverton, OR, June 1989
+  \item
+  J E Richardson and .M J Carey, “Programrmng
+  Constructs for Database System Implementanon m
+  EXODUS”, Proceedings of the ACM SIGMOD
+  Conference, San Francisco, CA., May 1987, 208-219
+  \item
+  K Salem and H Garaa-Molma, “Duk Stnpmg”,
+  Proceedrngs of the IEEE Conference on Data
+  Engtneerrng, Los Angeles, CA, February 1986. 336
+  \item
+  P Schwarz, W Chang, J C Freytag, G Lohman, J
+  McPherson, C Mohan and H Pvahesh “Extenslblllty
+  m the Starburst Database System”, Proceedmgs of
+  the Int’l Workshop on Object-Onented Database
+  Systems. Pacific Grove, CA, September 1986, 85-92.
+  \item
+  M Stonebraker, E. Wang. P. Kreps and G. D. Held,
+  “The Design and Implementauon of INGRES”, ACM
+  Tranmctwm on Databae Systems I, 3 (September
+  1976), 189-222
+  \item
+  M. Stonebraker and L A Rowe, “‘The Desqt of
+  POSTGRES”, Proceedmgs of the ACM SIGMOD
+  Conference, Wsshmgton, DC., May 1986, 340355.
+  \item
+  M Stonebraker, R. Katz, D. Patterson and J
+  Ousterhout, “The Deqn of XPRS”, Proceedtngs of
+  the Conforcncc on Vq Large Databases, Los
+  Angeles, CA, August 1988, 318330.
+  \item
+  S. Toru, K. KoJuna Y. Kanada, A. Sakata, S.
+  Yosluztmu and M. Takahti, “Acceleratmg
+  Nonnummcal Rocessmg by an Exfmded Veotor
+  Processor”, Proceedtngs of the IEEE Coqference on
+  Data Engtneerlng, Los Angeles, CA, February 1988,
+  194-201
+  \item
+  P. Wtiams, D. DameIs, L. Haas, G Laps, B.
+  Lmdsay, P. Ng, R. Obermarck, P Selmger, A.
+  WaLker, P WilmJ and R. Yoss “R*, An Overnew
+  of the Archlrecture”, in Readings in Database
+  Systems, M. Stonebrakes (editor), Morgan-Kaufman,
+  San Matm. CA, 1988.
+\end{enumerate}
 
 \end{document}
