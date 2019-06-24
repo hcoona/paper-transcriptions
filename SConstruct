@@ -22,3 +22,6 @@ for d in dirs:
         t = env.latexmk('archive/' + d + '.pdf', d + '/main.tex')
         env.Depends(t, Glob('common/*.tex'))
         env.Depends(t, Glob(os.path.join(d, '*.png')))
+
+# TODO: generate README.adoc Index automatically
+
