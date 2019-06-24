@@ -7,21 +7,20 @@ EXCLUDED_DIR = set([
 ])
 
 # TODO: parse the deps from -deps-out=${SOURCE.base}.deps
-latexmk = Builder(
+LATEXMK = Builder(
     action=[
         'latexmk -cd -xelatex -latexoption="-shell-escape" $SOURCE',
         Move('$TARGET', '${SOURCE.base}.pdf')
     ])
-env = Environment(
+ENV = Environment(
     ENV=os.environ,
-    BUILDERS={'latexmk': latexmk})
+    BUILDERS={'latexmk': LATEXMK})
 
-dirs = filter(os.path.isdir, os.listdir())
-for d in dirs:
+DIRS = filter(os.path.isdir, os.listdir())
+for d in DIRS:
     if not d in EXCLUDED_DIR:
-        t = env.latexmk('archive/' + d + '.pdf', d + '/main.tex')
-        env.Depends(t, Glob('common/*.tex'))
-        env.Depends(t, Glob(os.path.join(d, '*.png')))
+        t = ENV.latexmk('archive/' + d + '.pdf', d + '/main.tex')
+        ENV.Depends(t, Glob('common/*.tex'))
+        ENV.Depends(t, Glob(os.path.join(d, '*.png')))
 
 # TODO: generate README.adoc Index automatically
-
