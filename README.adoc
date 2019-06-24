@@ -19,6 +19,9 @@ I'd like to transcribe some valuable papers into LaTeX format for better reading
 | link:archive/10.1145_357401.357402.pdf[End-to-end arguments in system design]
 | link:http://portal.acm.org/citation.cfm?doid=357401.357402[10.1145/357401.357402]
 
+| link:archive/10.1007_BF02242709.pdf[Practical Uses of Synchronized Clocks in Distributed Systems]
+| link:http://doi.org/10.1007/BF02242709[10.1007/BF02242709]
+
 | link:archive/10.1145_3003665.3003674.pdf[What's Really New with NewSQL?]
 | link:https://dl.acm.org/citation.cfm?doid=3003665.3003674[10.1145/3003665.3003674]
 
