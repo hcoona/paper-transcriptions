@@ -602,6 +602,114 @@ $A_0$ and query evaluation terminates~(Figure 3h).
 There are a number of situations for which the
 \emph{exchange} operator described so far required some modifications
 or extensions. In this section, we outline additional
-capabilities implemented in Volcano’s exchange operator.
+capabilities implemented in Volcano's exchange operator.
+
+For some operations, it is desirable to \emph{replicate} or
+\emph{broadcast} a stream to all consumers. For example, one of
+the two partitioning methods for hash-division {[19]} requires
+that the divisor be replicated and used with each partition
+of the dividend. Another example is Baru's parallel join
+algorithm in which one of the two input relations is not
+moved at all while the other relation is sent through all
+processors. {[4]} To support these algorithms, the exchange
+operator can be directed (by setting a switch in the state
+record) to send all records to all consumers, after pinning
+them appropriately multiple times in the buffer pool.
+Notice that it is not necessary to copy the records since
+they reside in a shared buffer pool, it is sufficient to pin
+them such that each consumer can unpin them as if it were
+the only process using them. After we implemented this
+feature, parallelizing our hash-division programs using both
+divisor partitioning and quotient partitioning {[19]} took only
+about three hours and yielded not insignificant speedups.
+
+When we implemented and benchmarked parallel sorting~{[21]},
+we found it useful to add two more features to
+\emph{exchange}. First, we wanted to implement a merge network
+in which some processors produce sorted streams merge
+concurrently by other processors. Volcano's \emph{sort} iterator
+can be used to generate a sorted stream. A \emph{merge} iterator
+was easily derived from the sort module. It uses a single
+level merge, instead of the cascaded merge of runs used in
+sort. The input of a \emph{merge} iterator is an \emph{exchange}. Differently
+from other operators, the merge iterator requires to
+distinguish the input records by their producer. As an
+example, for a join operation It does not matter where the
+input records were created, and all inputs can bc accumulated
+in a single input stream. For a merge operation, it is
+crucial to distinguish the input records by their producer in
+order to merge multiple sorted streams correctly.
+
+We modified the \emph{exchange} module such that it can
+keep the input records separated according to their producers,
+switched by setting an argument field in the state
+record. A third argument to \texttt{next_exchange} is used to communicate
+the required producer from the \emph{merge} to the
+\emph{exchange} iterator. Further modifications included increasing
+the number of input buffers used by exchange, the number
+of semaphores (including for flow control) used between
+producer and consumer part of \emph{exchange}, and tie logic for
+\emph{end-of-stream}. All these modifications were implemented in
+such a way that they support multi-level merge trees, e.g., a
+parallel binary merge tree as used in~{[7]}. The merging
+paths are selected automatically such that the load is distributed
+as evenly as possible in each level.
+
+Second, we implemented a sort algorithm that sorts
+data randomly partitioned over multiple disks into a range-partitioned
+file with sorted partitions, i.e., a sorted file distributed
+over multiple disks. When using the same number
+of processors and disks, we used two processes per CPU,
+one to perform the file scan and partition the records and
+another one to sort them. We realized that creating and
+running more processes than processors inflicted a significant
+cost, since these processes competed for the CPU's and
+therefore required operating system scheduling. While the
+scheduling overhead may not be too significant, in our
+environment with a central run queue allowing processes to
+migrate freely and a large cache associated with each CPU,
+the frequent cache migration adds a significant cost.
+
+In order to make better use of the available processing
+power, we decided to reduce the number of processes
+by half, effectively moving to one process per disk. This
+required modification to the exchange operator. Until then,
+the exchange operator could ``live'' only at the top or the
+bottom of the operator tree in a process. Since the modification,
+the exchange operator can also be in the middle of
+a process' operator tree. When the exchange operator is
+\emph{opened}, it does not fork any processes but establishes a
+communication port for data exchange. The \emph{next} operation
+requests records from its input tree, possibly sending them
+off to other processes in the group, until a record for its
+own partition is found.
+
+The mode of operation\footnote{%
+Whether exchange forks new producer processes (the original
+exchange design describe in Section 4.1) or uses the existing
+process group to execute the producer operations is a runtime
+switch.%
+} also makes flow control
+obsolete. A process runs a producer (and produces input
+for the other processes) only if it does not have input for
+the consumer. Therefore, if the producers are in danger of
+overrunning the consumers, none of the producer operators
+gets scheduled, and the consumers consume the available
+records.
+
+In summary, the operator model of parallel query
+evaluation provides for self-scheduling parallel query evaluation
+in an extensible database system. The most important
+properties of this novel approach are that the new module
+implements three forms of parallel processing within a single
+module, that it makes parallel query processing entirely
+self-scheduling, and that it did not require any changes in
+the existing query processing modules, thus leveraging significantly
+the time and effort spent on them and allowing
+easy parallel implementation of new algorithms.
+
+\section{Overhead and Performance}
+
+
 
 \end{document}
