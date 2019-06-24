@@ -7,23 +7,19 @@ I'd like to transcribe some valuable papers into LaTeX format for better reading
 
 == Index
 
-[cols=3*,options="header"]
+[cols=2*,options="header"]
 |===
 
-| Name
+| Name (Ordered)
 | DOI
-| Original Link
 
 | link:archive/10.1145_93597.98720.pdf[Encapsulation of Parallelism in the Volcano Query Processing System]
-| 10.1145/93597.98720
-| http://doi.acm.org/10.1145/93597.98720
+| link:http://doi.acm.org/10.1145/93597.98720[10.1145/93597.98720]
 
 | link:archive/10.1145_357401.357402.pdf[End-to-end arguments in system design]
-| 10.1145/357401.357402
-| http://portal.acm.org/citation.cfm?doid=357401.357402
+| link:http://portal.acm.org/citation.cfm?doid=357401.357402[10.1145/357401.357402]
 
 | link:archive/10.1145_3003665.3003674.pdf[What's Really New with NewSQL?]
-| 10.1145/3003665.3003674
-| https://dl.acm.org/citation.cfm?doid=3003665.3003674
+| link:https://dl.acm.org/citation.cfm?doid=3003665.3003674[10.1145/3003665.3003674]
 
 |===
