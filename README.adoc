@@ -14,6 +14,10 @@ I'd like to transcribe some valuable papers into LaTeX format for better reading
 | DOI
 | Original Link
 
+| link:archive/10.1145_93597.98720.pdf[Encapsulation of Parallelism in the Volcano Query Processing System]
+| 10.1145/93597.98720
+| http://doi.acm.org/10.1145/93597.98720
+
 | link:archive/10.1145_357401.357402.pdf[End-to-end arguments in system design]
 | 10.1145/357401.357402
 | http://portal.acm.org/citation.cfm?doid=357401.357402
