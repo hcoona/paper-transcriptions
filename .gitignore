@@ -1,6 +1,6 @@
 
-# Created by https://www.gitignore.io/api/vim,latex,emacs,linux,macos,windows,visualstudiocode
-# Edit at https://www.gitignore.io/?templates=vim,latex,emacs,linux,macos,windows,visualstudiocode
+# Created by https://www.gitignore.io/api/vim,latex,emacs,linux,scons,macos,windows,visualstudiocode
+# Edit at https://www.gitignore.io/?templates=vim,latex,emacs,linux,scons,macos,windows,visualstudiocode
 
 ### Emacs ###
 # -*- mode: gitignore; -*-
@@ -363,6 +363,14 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+### SCons ###
+# for projects that use SCons for building: http://http://www.scons.org/
+.sconsign.dblite
+
+# When configure fails, SCons outputs these
+config.log
+.sconf_temp
+
 ### Vim ###
 # Swap
 [._]*.s[a-v][a-z]
@@ -417,6 +425,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# End of https://www.gitignore.io/api/vim,latex,emacs,linux,macos,windows,visualstudiocode
-
-
+# End of https://www.gitignore.io/api/vim,latex,emacs,linux,scons,macos,windows,visualstudiocode
