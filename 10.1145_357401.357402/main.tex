@@ -391,7 +391,6 @@ data encryption. The argument here is threefold. First, if the data
 transmission system performs encryption and decryption, it must be
 trusted to securely manage the required encryption keys. Second, the
 data will be in the clear and thus vulnerable
-
 as they pass into the target node and are fanned out to the target
 application. Third, the \emph{authenticity} of the message must still be
 checked by the application. If the application performs end-to-end
@@ -419,8 +418,8 @@ satisfy both requirements completely.
 \subsection{Duplicate Message
 Suppression}\label{duplicate-message-suppression}}
 
-a more sophisticated argument can be applied to duplicate message
-suppression. A property of some communication network designs is tha t
+A more sophisticated argument can be applied to duplicate message
+suppression. A property of some communication network designs is that
 a message or a part of a message may be delivered twice, typically as
 a result of time-out-triggered failure detection and retry mechanisms
 operating within the network. The network can watch for and suppress
