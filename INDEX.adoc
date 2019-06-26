@@ -5,6 +5,9 @@
 | Name (Ordered)
 | DOI
 
+| link:archive/10.1109_icc.2002.997043.pdf[A critical review of "End-to-end arguments in system design"]
+| link:https://ieeexplore.ieee.org/document/997043[10.1109/icc.2002.997043]
+
 | link:archive/10.1145_93597.98720.pdf[Encapsulation of Parallelism in the Volcano Query Processing System]
 | link:http://doi.acm.org/10.1145/93597.98720[10.1145/93597.98720]
 
