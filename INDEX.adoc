@@ -5,6 +5,9 @@
 | Name (Ordered)
 | DOI
 
+| link:archive/10.1561_1900000002.pdf[Architecture of a Database System]
+| link:http://www.nowpublishers.com/article/Details/DBS-002[10.1561/1900000002]
+
 | link:archive/10.1145_93597.98720.pdf[Encapsulation of Parallelism in the Volcano Query Processing System]
 | link:http://doi.acm.org/10.1145/93597.98720[10.1145/93597.98720]
 
