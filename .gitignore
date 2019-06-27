@@ -1,8 +1,16 @@
 main.pdf
 *.dep
 
-# Created by https://www.gitignore.io/api/vim,latex,emacs,linux,scons,macos,windows,visualstudiocode
-# Edit at https://www.gitignore.io/?templates=vim,latex,emacs,linux,scons,macos,windows,visualstudiocode
+# Created by https://www.gitignore.io/api/vim,latex,emacs,linux,scons,macos,windows,visualstudiocode,bazel
+# Edit at https://www.gitignore.io/?templates=vim,latex,emacs,linux,scons,macos,windows,visualstudiocode,bazel
+
+### Bazel ###
+# gitignore template for Bazel build system
+# website: https://bazel.build/
+
+# Ignore all bazel-* symlinks. There is no full list since this can change
+# based on the name of the directory bazel is cloned into.
+/bazel-*
 
 ### Emacs ###
 # -*- mode: gitignore; -*-
@@ -427,4 +435,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# End of https://www.gitignore.io/api/vim,latex,emacs,linux,scons,macos,windows,visualstudiocode
+# End of https://www.gitignore.io/api/vim,latex,emacs,linux,scons,macos,windows,visualstudiocode,bazel
