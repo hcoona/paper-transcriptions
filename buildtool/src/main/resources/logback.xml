@@ -2,11 +2,15 @@
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%thread] %level %logger{36} %X{BaseDirectory} - %msg%n</pattern>
+      <pattern>
+        %date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%thread] %level %logger{36} %X{BaseDirectory} - %msg%n
+      </pattern>
     </encoder>
   </appender>
 
-  <root level="debug">
-    <appender-ref ref="STDOUT" />
+  <logger name="io.github.hcoona" level="DEBUG"/>
+
+  <root level="INFO">
+    <appender-ref ref="STDOUT"/>
   </root>
 </configuration>
