@@ -1,3 +1,5 @@
+main.pdf
+*.deps
 
 # Created by https://www.gitignore.io/api/vim,latex,emacs,linux,scons,macos,windows,visualstudiocode
 # Edit at https://www.gitignore.io/?templates=vim,latex,emacs,linux,scons,macos,windows,visualstudiocode

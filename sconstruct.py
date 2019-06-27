@@ -6,10 +6,9 @@ EXCLUDED_DIR = set([
     'common'
 ])
 
-# TODO: parse the deps from -deps-out=${SOURCE.base}.deps
 LATEXMK = Builder(
     action=[
-        'latexmk -cd -xelatex -latexoption="-shell-escape" $SOURCE',
+        'latexmk -cd -deps-out=${SOURCE.base}.deps -xelatex -latexoption="-shell-escape" $SOURCE',
         Move('$TARGET', '${SOURCE.base}.pdf')
     ])
 ENV = Environment(
