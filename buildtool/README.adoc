@@ -1,0 +1,30 @@
+= The Build Tool
+Shuai Zhang<zhangshuai.ustc@gmail.com>
+
+The build tool help build the LaTeX files in this repository.
+
+== Why
+
+We need this tool because:
+
+. The generated PDF files could differ although the LaTeX source files not changed.
+. Storing binary files is expensive in a Git repository although with the help of Git LFS.
+. We need to accurately identify when to update a PDF file to reduce the cost of saving PDF files with the same content but different binary signature.
+
+== How
+
+The `latexmk` tool could generate a dependency manifest with the option `-deps-out=<file>`. We got all necessary information after calculated the binary checksum for all inputs & outputs.
+
+== Getting Started
+
+TODO
+
+== Basic Algorithm
+
+. Check if the manifest file exists
+. Verify the checksum records in the manifest file
+. If any steps failed, execute the build steps
+.. Run `latexmk` tool for all `.tex` files with the order `main.tex` be the last proceed one.
+.. Parse the generated dependency manifest, calculate checksum for all input files & output files.
+.. Record the manifest file.
+.. Move the generated PDF file to correct position.
