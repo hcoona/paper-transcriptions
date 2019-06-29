@@ -3064,7 +3064,7 @@ support row granularity locks in the same table both efficiently and
 correctly.
 
 The lock manager supports two basic calls; \texttt{lock (lockname,
-transactionID, mode)}, and \texttt{remove\_transaction (transaction-ID)}. Note that
+transactionID, mode)}, and \texttt{remove\_transaction (transactionID)}. Note that
 because of the strict 2PL protocol, there should not be an individual
 call to unlock resources individually --- the \texttt{remove\_transaction()} call
 will unlock all resources associated with a transaction. However, as we
@@ -3420,7 +3420,6 @@ log sequence} \emph{number} (recovery LSN). Since computing and
 recording the recovery LSN incurs overhead, and since we know that the
 recovery LSN is
 monotonically increasing, we do not need to keep it always up to date.
-
 Instead we compute it at periodic intervals called \emph{checkpoints}.
 
 A na\"ive checkpoint would force all dirty buffer pool pages and then
