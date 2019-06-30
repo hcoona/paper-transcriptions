@@ -3,7 +3,9 @@ import os
 EXCLUDED_DIR = set([
     '.git',
     'archive',
-    'common'
+    'buildtool',
+    'common',
+    'src',
 ])
 
 LATEXMK = Builder(
