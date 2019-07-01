@@ -3589,7 +3589,6 @@ A common approach to the phantom problem in B+-trees is called
 \emph{next-key locking}. In next-key locking, the index insertion code
 is modified so that an insertion of a tuple with index key \emph{k} must
 allocate an
-
 exclusive lock on the next-key tuple that exists in the index, where the
 next-key tuple has the lowest key greater than \emph{k}. This protocol
 ensures that subsequent insertions cannot appear in between two tuples
