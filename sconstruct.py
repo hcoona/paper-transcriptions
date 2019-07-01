@@ -8,7 +8,7 @@ EXCLUDED_DIR = set([
 
 LATEXMK = Builder(
     action=[
-        'latexmk -cd -deps-out=${SOURCE.base}.deps -xelatex -latexoption="-shell-escape" $SOURCE',
+        'latexmk -cd -deps-out=${SOURCE.base}.dep -xelatex -latexoption="-shell-escape" $SOURCE',
         Move('$TARGET', '${SOURCE.base}.pdf')
     ])
 ENV = Environment(
