@@ -7,15 +7,15 @@
   breaklinks=true}
 \urlstyle{same}  % don't use monospace font for urls
 
-\usetikzlibrary{arrows.meta,shapes.geometric,shapes.misc}
+\usetikzlibrary{arrows.meta,calc,shapes.geometric,shapes.misc}
 
-\newminted{java}{%
+\setminted{
   autogobble,
   breakbytokenanywhere,
   breaklines,
   fontsize=\footnotesize,
 }
-\newmintinline{java}{%
+\setmintedinline{
   autogobble,
   breakbytokenanywhere,
   breaklines,
@@ -36,11 +36,11 @@
 
 % Redefines (sub)paragraphs to behave more like sections
 \ifx\paragraph\undefined\else
-\let\oldparagraph\paragraph
+\let\oldparagraph\paragraph{}
 \renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
 \fi
 \ifx\subparagraph\undefined\else
-\let\oldsubparagraph\subparagraph
+\let\oldsubparagraph\subparagraph{}
 \renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
 \fi
 

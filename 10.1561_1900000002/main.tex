@@ -14,10 +14,12 @@
 \input{../common/setup.tex}
 
 \title{Architecture of a Database System}
-\author{
-Joseph M. Hellerstein \thanks{University of California, Berkeley, USA, hellerstein@cs.berkeley.edu} \\%
-Michael Stonebraker \thanks{Massachusetts Institute of Technology, USA} \\%
-James Hamilton \thanks{Microsoft Research, USA}}
+\author{Joseph M. Hellerstein}
+\affil{University of California, Berkeley, USA, hellerstein@cs.berkeley.edu}
+\author{Michael Stonebraker}
+\affil{Massachusetts Institute of Technology, USA}
+\author{James Hamilton}
+\affil{Microsoft Research, USA}
 \date{}
 
 \begin{document}
@@ -25,9 +27,9 @@ James Hamilton \thanks{Microsoft Research, USA}}
 \maketitle
 \thispagestyle{empty}
 
-\cleardoublepage
+\cleardoublepage{}
 \pagenumbering{roman}
-\tableofcontents
+\tableofcontents{}
 
 \hypertarget{abstract}{%
 \chapter*{Abstract}\label{abstract}}
@@ -827,7 +829,7 @@ new process models for server systems, motivated by changes in hardware
 bottlenecks, and by the scale and variability of workload on the
 Internet well {[}31, 48, 93, 94{]}. One theme emerging in these designs
 is to break down a server system into a set of independently scheduled
-``engines,'' with messages passed asynchronously and in bulk between
+``engines'', with messages passed asynchronously and in bulk between
 these engines. This is something like the ``process pool'' model above,
 in that worker units are reused across multiple requests. The main
 novelty in this recent research is to break the functional granules of
@@ -975,7 +977,7 @@ hosts some fraction of the data in the database. There are at least
 three possible approaches in this scenario. The first is to bring down
 all nodes if any node fails; this in essence emulates what would happen
 in a shared-memory system. The second approach, which Informix dubbed
-``Data Skip,'' allows queries to be executed on any nodes that are up,
+``Data Skip'', allows queries to be executed on any nodes that are up,
 ``skipping'' the data on the failed node. This is useful in scenarios
 where data \emph{availability} is more important than completeness of
 results. But best-effort results do not have well-defined semantics, and
@@ -989,7 +991,7 @@ redundancy like \emph{chained declustering} {[}43{]}. In this latter
 technique, tuple copies are spread across multiple nodes in the cluster.
 The advantage of chained declustering over simpler schemes is that (a)
 it requires fewer machines to be deployed to guarantee availability than
-na\"ive schemes, and (b) when a node does fails, the system load is
+na{\"\i}ve schemes, and (b) when a node does fails, the system load is
 distributed fairly evenly over the remaining nodes: the $n - 1$
 remaining nodes each do $n / (n - 1)$ of the
 original work, and this form of linear degradation in performance
@@ -1302,7 +1304,7 @@ disambiguation logic for overloaded functional expressions, comparison
 operators, and constant expressions. For example, consider the
 expression \texttt{(EMP.salary * 1.15) < 75000}. The code for the
 multiplication function and comparison operator, and the assumed data
-type and internal format of the strings ``1.15'' and ``75000,'' will
+type and internal format of the strings ``1.15'' and ``75000'', will
 depend upon the data type of the EMP.salary attribute. This data type
 may be an integer, a floating-point number, or a ``money'' value.
 Additional standard SQL syntax checks are also applied, including the
@@ -1531,7 +1533,7 @@ difference between them is the intermediate form's level of abstraction.
 The query plan in some systems is a very lightweight object, not unlike
 a relational algebraic expression, that is annotated with the names of
 access methods, join algorithms, and so on. Other systems use a
-lower-level language of ``op-codes,'' closer in spirit to Java byte
+lower-level language of ``op-codes'', closer in spirit to Java byte
 codes than to relational algebraic expressions. For simplicity in our
 discussion, we focus on algebra-like query representations in the
 remainder of this paper.
@@ -1553,7 +1555,7 @@ significantly in a number of dimensions. Among the main extensions are:
 \item
   \emph{Selectivity estimation}: The selectivity estimation techniques
   in the Selinger paper are based on simple table and index
-  cardinalities and are na\"ive by the standards of current generation
+  cardinalities and are na{\"\i}ve by the standards of current generation
   systems. Most systems today analyze and summarize the distributions of
   values in attributes via histograms and other summary statistics.
   Since this involves visiting every value in each column, it can be
@@ -1866,11 +1868,11 @@ the end of the pipeline.
 In some cases, however, these plans both query and modify the same data.
 This mix of reading and writing the same table (possibly multiple times)
 requires some care. A simple example is the notorious ``Halloween
-problem,''\footnote{Despite the spooky similarity in names, the Halloween problem has
+problem'',\footnote{Despite the spooky similarity in names, the Halloween problem has
 nothing to do with the phantom problem of Section 4.2.1} so called because it was discovered on
 October 31st by the System R group. The Halloween problem arises from a
 particular execution strategy for statements like ``give everyone whose
-salary is under \$20K a 10\% raise.'' A na\"ive plan for this query
+salary is under \$20K a 10\% raise.'' A na{\"\i}ve plan for this query
 pipelines an index scan iterator over the Emp.salary field into an
 update iterator (the left-hand side of \autoref{fig-4-3}). The pipelining
 provides good I/O
@@ -2330,7 +2332,7 @@ system {[}88{]}.
   types, it merely invokes their methods appropriately in expression
   evaluation; hence the name ``abstract data types''. As a typical
   example, one could register a type for 2-dimensional spatial
-  ``rectangles,'' and methods for operations like rectangle intersection
+  ``rectangles'', and methods for operations like rectangle intersection
   or union. This also means that the system must provide a runtime
   engine for user-defined code, and safely execute that code without any
   risk of crashing the database server or corrupting data. All of
@@ -2428,7 +2430,7 @@ the list (typically called a ``postings list''), which is critical given
 the characteristically skewed (Zipfian) distribution of words in
 documents. Moreover, text databases tend to be used in a data
 warehousing style, bypassing any DBMS logic for transactions. The common
-belief is that a na\"ive implementation of text search in a DBMS like the
+belief is that a na{\"\i}ve implementation of text search in a DBMS like the
 one above runs roughly an order of magnitude slower than the custom text
 indexing engines.
 
@@ -2919,7 +2921,7 @@ the simple protocols workable.
 \hypertarget{a-note-on-acid}{%
 \section{A Note on ACID}\label{a-note-on-acid}}
 
-Many people are familiar with the term ``ACID transactions,'' a mnemonic
+Many people are familiar with the term ``ACID transactions'', a mnemonic
 due to Haerder and Reuter {[}34{]}. ACID stands for \emph{Atomicity,
 Consistency, Isolation}, and \emph{Durability}. These terms were not
 formally defined, and are not mathematical axioms that combine to
@@ -3054,7 +3056,7 @@ can have a lock associated with it --- even if that name represents an
 abstract concept. The locking mechanism simply provides a place to
 register and check for these names. Every lock is associated with a
 transaction and each transaction has a unique transaction ID. Locks come
-in different lock ``modes,'' and these modes are associated with a
+in different lock ``modes'', and these modes are associated with a
 lock-mode compatibility table. In most systems, this logic is based on
 the well-known lock modes that are introduced in Gray's paper on
 granularity of locks {[}29{]}. That paper also explains how hierarchical
@@ -3248,7 +3250,7 @@ provide additional levels that have proven popular in particular cases.
   STABILITY mode holds a lock on the most recently read item on a query
   cursor; the lock is automatically dropped when the cursor is moved
   (e.g., via another FETCH) or the transaction terminates. CURSOR
-  STABILITY allows the transaction to do read-- think--write sequences
+  STABILITY allows the transaction to do read--think--write sequences
   on individual items without intervening updates from other
   transactions.
 \end{itemize}
@@ -3422,7 +3424,7 @@ recovery LSN is
 monotonically increasing, we do not need to keep it always up to date.
 Instead we compute it at periodic intervals called \emph{checkpoints}.
 
-A na\"ive checkpoint would force all dirty buffer pool pages and then
+A na{\"\i}ve checkpoint would force all dirty buffer pool pages and then
 compute and store the recovery LSN. With a large buffer pool, this could
 lead to delays of several seconds to complete the I/O of the pending
 pages. So a more efficient ``fuzzy'' scheme for checkpointing is
@@ -3493,7 +3495,7 @@ correct data at the leaves. There are roughly three approaches to this:
   \emph{Latch-coupling schemes}: The tree traversal logic latches each
   node before it is visited, only unlatching a node when the next node
   to be visited has been successfully latched. This scheme is sometimes
-  called latch ``crabbing,'' because of the crablike movement of
+  called latch ``crabbing'', because of the crablike movement of
   ``holding'' a node in the tree, ``grabbing'' its child, releasing the
   parent, and repeating. Latch coupling is used in some commercial
   systems; IBM's ARIES-IM version is well-described {[}60{]}. ARIES-IM
@@ -3571,9 +3573,9 @@ isolation models.
 The phantom problem can arise when a transaction accesses tuples via an
 index. In such cases, the transaction typically does not lock the entire
 table, just the tuples in the table that are accessed via the index
-(e.g., ``Name BETWEEN `Bob' AND `Bobby'\,''). In the absence of a
+(e.g., ``Name BETWEEN `Bob' AND `Bobby'\'',). In the absence of a
 table-level lock, other transactions are free to insert new tuples into
-the table (e.g., ``Name=`Bobbie'\,''). When these new inserts fall
+the table (e.g., ``Name=`Bobbie'\'',). When these new inserts fall
 within the value-range of a query predicate, they will appear in
 subsequent accesses via that predicate. Note that the phantom problem
 relates to the visibility of database tuples, and hence is a problem
@@ -4138,7 +4140,7 @@ online utilities. We give a flavor of these utilities here:
 \item
   \emph{Backup/Export:} All DBMSs support the ability to physically
   dump the database to backup storage. Again, since this is a
-  long-running process, it cannot na\"ively set locks. Instead, most
+  long-running process, it cannot na{\"\i}vely set locks. Instead, most
   systems perform some kind of ``fuzzy'' dump, and augment it with
   logging logic to ensure transactional consistency. Similar schemes can
   be used to export the database to an interchange format.
@@ -4156,7 +4158,7 @@ online utilities. We give a flavor of these utilities here:
   than desirable. Hence most DBMSs provide tools to assist
   administrators in identifying and preventing these kinds of problems.
   It is typical to provide a SQL-based interface to DBMS performance
-  counters via ``virtual tables,'' which can show system status broken
+  counters via ``virtual tables'', which can show system status broken
   down by queries or by resources like locks, memory, temporary storage,
   and the like. In some systems, it is also possible to query historical
   logs of such data. Many systems allow alerts to be registered when
@@ -4206,118 +4208,118 @@ information and comments on early drafts of this paper.
 
 \item
   A. Adya, B. Liskov, and P. O'Neil, ``Generalized isolation level
-  definitions,'' in \emph{16th International Conference on Data Engineering (ICDE)}, San
+  definitions'', in \emph{16th International Conference on Data Engineering (ICDE)}, San
 Diego, CA, February 2000.
 \item
   R. Agrawal, M. J. Carey, and M. Livny, ``Concurrency control
-  performance modelling: Alternatives and implications,'' \emph{ACM
+  performance modelling: Alternatives and implications'', \emph{ACM
   Transactions on Database Systems (TODS)}, vol.~12, pp.~609--654,
   1987.
 \item
   M. M. Astrahan, M. W. Blasgen, D. D. Chamberlin, K. P. Eswaran, J.
   Gray, P. P. Griffiths, W. F. Frank King III, R. A. Lorie, P. R.
   McJones, J. W. Mehl, G. R. Putzolu, I. L. Traiger, B. W. Wade, and V.
-  Watson, ``System R: Relational approach to database management,''
+  Watson, ``System R: Relational approach to database management'',
   \emph{ACM Transactions on Database Systems} \emph{(TODS)}, vol.~1,
   pp.~97--137, 1976.
 \item
-  R. Bayer and M. Schkolnick, ``Concurrency of operations on B-trees,''
+  R. Bayer and M. Schkolnick, ``Concurrency of operations on B-trees'',
   \emph{Acta} \emph{Informatica}, vol.~9, pp.~1--21, 1977.
 \item
   K. P. Bennett, M. C. Ferris, and Y. E. Ioannidis, ``A genetic
-  algorithm for database query optimization,'' in \emph{Proceedings of
+  algorithm for database query optimization'', in \emph{Proceedings of
   the 4th International Conference on Genetic Algorithms},
   pp.~400--407, San Diego, CA, July 1991.
 \item
   H. Berenson, P. A. Bernstein, J. Gray, J. Melton, E. J. O'Neil, and P.
-  E. O'Neil, ``A critique of ANSI SQL isolation levels,'' in
+  E. O'Neil, ``A critique of ANSI SQL isolation levels'', in
   \emph{Proceedings of ACM SIGMOD} \emph{International Conference on
   Management of Data}, pp.~1--10, San Jose, CA, May 1995.
 \item
   P. A. Bernstein and N. Goodman, ``Concurrency control in distributed
-  database systems,'' \emph{ACM Computing Surveys}, vol.~13, 1981.
+  database systems'', \emph{ACM Computing Surveys}, vol.~13, 1981.
 \item
   W. Bridge, A. Joshi, M. Keihl, T. Lahiri, J. Loaiza, and N.
-  MacNaughton, ``The oracle universal server buffer,'' in
+  MacNaughton, ``The oracle universal server buffer'', in
   \emph{Proceedings of 23rd International Conference} \emph{on Very
   Large Data Bases (VLDB)}, pp.~590--594, Athens, Greece, August 1997.
 \item
   F. Chang, J. Dean, S. Ghemawat, W. C. Hsieh, D. A. Wallach, M.
   Burrows, T. Chandra, A. Fikes, and R. E. Gruber, ``Bigtable: A
-  distributed storage system for structured data,'' in \emph{Symposium
+  distributed storage system for structured data'', in \emph{Symposium
   on Operating System Design and} \emph{Implementation (OSDI)}, 2006.
 \item
   S. Chaudhuri, ``An overview of query optimization in relational
-  systems,'' in \emph{Proceedings of ACM Principles of Database Systems (PODS)}, 1998.
+  systems'', in \emph{Proceedings of ACM Principles of Database Systems (PODS)}, 1998.
 \item
   S. Chaudhuri and U. Dayal, ``An overview of data warehousing and olap
-  technology,'' \emph{ACM SIGMOD Record}, March 1997.
+  technology'', \emph{ACM SIGMOD Record}, March 1997.
 \item
   S. Chaudhuri and V. R. Narasayya, ``Autoadmin `what-if' index analysis
-  utility,'' in \emph{Proceedings of ACM SIGMOD International Conference
+  utility'', in \emph{Proceedings of ACM SIGMOD International Conference
   on Management of Data}, pp.~367--378, Seattle, WA, June 1998.
 \item
   S. Chaudhuri and K. Shim, ``Optimization of queries with user-defined
-  predicates,'' \emph{ACM Transactions on Database Systems (TODS)},
+  predicates'', \emph{ACM Transactions on Database Systems (TODS)},
   vol.~24, pp.~177--228, 1999.
 \item
   M.-S. Chen, J. Hun, and P. S. Yu, ``Data mining: An overview from a
-  database perspective,'' \emph{IEEE Transactions on Knowledge and Data
+  database perspective'', \emph{IEEE Transactions on Knowledge and Data
   Engineering}, vol.~8, 1996.
 \item
   H.-T. Chou and D. J. DeWitt, ``An evaluation of buffer management
-  strategies for relational database systems,'' in \emph{Proceedings of
+  strategies for relational database systems'', in \emph{Proceedings of
   11th International Conference on Very Large Data Bases (VLDB)},
   pp.~127--141, Stockholm, Sweden, August 1985.
 \item
   A. Desphande, M. Garofalakis, and R. Rastogi, ``Independence is good:
-  Dependency-based histogram synopses for high-dimensional data,'' in
+  Dependency-based histogram synopses for high-dimensional data'', in
   \emph{Proceedings of the 18th International Conference on Data
   Engineering}, San Jose, CA, February 2001.
 \item
   P. Flajolet and G. Nigel Martin, ``Probabilistic counting algorithms
-  for data base applications,'' \emph{Journal of Computing System
+  for data base applications'', \emph{Journal of Computing System
   Science}, vol.~31, pp.~182--209, 1985.
 \item
   C. A. Galindo-Legaria, A. Pellenkoft, and M. L. Kersten, ``Fast,
-  randomized join-order selection --- why use transformations?,''
+  randomized join-order selection --- why use transformations?'',
   \emph{VLDB}, pp.~85--95, 1994.
 \item
   S. Ganguly, W. Hasan, and R. Krishnamurthy, ``Query optimization for
-  parallel execution,'' in \emph{Proceedings of the ACM SIGMOD
+  parallel execution'', in \emph{Proceedings of the ACM SIGMOD
   International Conference on} \emph{Management of Data}, pp.~9--18, San
   Diego, CA, June 1992.
 \item
   M. Garofalakis and P. B. Gibbons, ``Approximate query processing:
-  Taming the terabytes, a tutorial,'' in \emph{International
+  Taming the terabytes, a tutorial'', in \emph{International
   Conferenence on Very Large Data} \emph{Bases}, 2001.
   www.vldb.org/conf/2001/tut4.pdf.
 \item
   M. N. Garofalakis and Y. E. Ioannidis, ``Parallel query scheduling and
-  optimization with time- and space-shared resources,'' in
+  optimization with time- and space-shared resources'', in
   \emph{Proceedings of 23rd International Conference on Very Large Data
   Bases (VLDB)}, pp.~296--305, Athens, Greece, August 1997.
 \item
   R. Goldman and J. Widom, ``Wsq/dsq: A practical approach for combined
-  querying of databases and the web,'' in \emph{Proceedings of
+  querying of databases and the web'', in \emph{Proceedings of
   ACM-SIGMOD International Conference on Management of Data}, 2000.
 \item
   G. Graefe, ``Encapsulation of parallelism in the volcano query
-  processing system,'' in \emph{Proceedings of ACM-SIGMOD International
+  processing system'', in \emph{Proceedings of ACM-SIGMOD International
   Conference on Management of Data}, pp.~102--111, Atlantic City, May
   1990.
 \item
-  G. Graefe, ``Query evaluation techniques for large databases,''
+  G. Graefe, ``Query evaluation techniques for large databases'',
   \emph{Computing Surveys}, vol.~25, pp.~73--170, 1993.
 \item
-  G. Graefe, ``The cascades framework for query optimization,''
+  G. Graefe, ``The cascades framework for query optimization'',
   \emph{IEEE Data Engineering Bulletin}, vol.~18, pp.~19--29, 1995.
 \item
   C. Graham, ``Market share: Relational database management systems by
-  operating system, worldwide, 2005,'' Gartner Report No: G00141017, May
+  operating system, worldwide, 2005'', Gartner Report No: G00141017, May
   2006.
 \item
-  J. Gray, ``Greetings from a filesystem user,'' in \emph{Proceedings of
+  J. Gray, ``Greetings from a filesystem user'', in \emph{Proceedings of
   the FAST '05} \emph{Conference on File and Storage Technologies}, (San
   Francisco), December 2005.
 \item
@@ -4326,7 +4328,7 @@ Diego, CA, February 2000.
   \url{http://research.microsoft.com/~Gray/papers/FlashDiskPublic.doc}.
 \item
   J. Gray, R. A. Lorie, G. R. Putzolu, and I. L. Traiger, ``Granularity
-  of locks and degrees of consistency in a shared data base,'' in
+  of locks and degrees of consistency in a shared data base'', in
   \emph{IFIP Working Conference} \emph{on Modelling in Data Base
   Management Systems}, pp.~365--394, 1976.
 \item
@@ -4335,189 +4337,189 @@ Diego, CA, February 2000.
 \item
   S. D. Gribble, E. A. Brewer, J. M. Hellerstein, and D. Culler,
   ``Scalable, distributed data structures for internet service
-  construction,'' in \emph{Proceedings of the} \emph{Fourth Symposium on
+  construction'', in \emph{Proceedings of the} \emph{Fourth Symposium on
   Operating Systems Design and Implementation (OSDI)}, 2000.
 \item
   A. Guttman, ``R-trees: A dynamic index structure for spatial
-  searching,'' in \emph{Proceedings of ACM-SIGMOD International
+  searching'', in \emph{Proceedings of ACM-SIGMOD International
   Conference on Management of Data}, pp.~47--57, Boston, June 1984.
 \item
   L. Haas, D. Kossmann, E. L. Wimmers, and J. Yang, ``Optimizing queries
-  across diverse data sources,'' in \emph{International Conference on
+  across diverse data sources'', in \emph{International Conference on
   Very Large Databases} \emph{(VLDB)}, 1997.
 \item
   T. Haerder and A. Reuter, ``Principles of transaction-oriented
-  database recovery,'' \emph{ACM Computing Surveys}, vol.~15,
+  database recovery'', \emph{ACM Computing Surveys}, vol.~15,
   pp.~287--317, 1983.
 \item
   S. Harizopoulos and N. Ailamaki, ``StagedDB: Designing database
-  servers for modern hardware,'' \emph{IEEE Data Engineering Bulletin},
+  servers for modern hardware'', \emph{IEEE Data Engineering Bulletin},
   vol.~28, pp.~11--16, June 2005.
 \item
   S. Harizopoulos, V. Liang, D. Abadi, and S. Madden, ``Performance
-  tradeoffs in read-optimized databases,'' in \emph{Proceedings of the
+  tradeoffs in read-optimized databases'', in \emph{Proceedings of the
   32nd Very Large Databases} \emph{Conference (VLDB)}, 2006.
 \item
   J. M. Hellerstein, ``Optimization techniques for queries with
-  expensive methods,'' \emph{ACM Transactions on Database Systems
+  expensive methods'', \emph{ACM Transactions on Database Systems
   (TODS)}, vol.~23, pp.~113--157, 1998.
 \item
-  J. M. Hellerstein, P. J. Haas, and H. J. Wang, ``Online aggregation,''
+  J. M. Hellerstein, P. J. Haas, and H. J. Wang, ``Online aggregation'',
   in \emph{Proceedings of ACM-SIGMOD International Conference on
   Management of Data}, 1997.
 \item
   J. M. Hellerstein, J. Naughton, and A. Pfeffer, ``Generalized search
-  trees for database system,'' in \emph{Proceedings of Very Large Data
+  trees for database system'', in \emph{Proceedings of Very Large Data
   Bases Conference} \emph{(VLDB)}, 1995.
 \item
   J. M. Hellerstein and A. Pfeffer, ``The russian-doll tree, an index
-  structure for sets,'' University of Wisconsin Technical Report TR1252,
+  structure for sets'', University of Wisconsin Technical Report TR1252,
   1994.
 \item
-  C. Hoare, ``Monitors: An operating system structuring concept,''
+  C. Hoare, ``Monitors: An operating system structuring concept'',
   \emph{Communications of the ACM (CACM)}, vol.~17, pp.~549--557, 1974.
 \item
   W. Hong and M. Stonebraker, ``Optimization of parallel query execution
-  plans in xprs,'' in \emph{Proceedings of the First International
+  plans in xprs'', in \emph{Proceedings of the First International
   Conference on Parallel} \emph{and Distributed Information Systems
   (PDIS)}, pp.~218--225, Miami Beach, FL, December 1991.
 \item
   H.-I. Hsiao and D. J. DeWitt, ``Chained declustering: A new
-  availability strategy for multiprocessor database machines,'' in
+  availability strategy for multiprocessor database machines'', in
   \emph{Proceedings of Sixth International Conference on Data
   Engineering (ICDE)}, pp.~456--465, Los Angeles, CA, November 1990.
 \item
   Y. E. Ioannidis and Y. Cha Kang, ``Randomized algorithms for
-  optimizing large join queries,'' in \emph{Proceedings of ACM-SIGMOD
+  optimizing large join queries'', in \emph{Proceedings of ACM-SIGMOD
   International Conference} \emph{on Management of Data}, pp.~312--321,
   Atlantic City, May 1990.
 \item
   Y. E. Ioannidis and S. Christodoulakis, ``On the propagation of errors
-  in the size of join results,'' in \emph{Proceedings of the ACM SIGMOD
+  in the size of join results'', in \emph{Proceedings of the ACM SIGMOD
   International Conference} \emph{on Management of Data}, pp.~268--277,
   Denver, CO, May 1991.
 \item
   M. Kornacker, C. Mohan, and J. M. Hellerstein, ``Concurrency and
-  recovery in generalized search trees,'' in \emph{Proceedings of ACM
+  recovery in generalized search trees'', in \emph{Proceedings of ACM
   SIGMOD International} \emph{Conference on Management of Data},
   pp.~62--72, Tucson, AZ, May 1997.
 \item
   H. T. Kung and J. T. Robinson, ``On optimistic methods for concurrency
-  control,'' \emph{ACM Tranactions on Database Systems (TODS)}, vol.~6,
+  control'', \emph{ACM Tranactions on Database Systems (TODS)}, vol.~6,
   pp.~213--226, 1981.
 \item
   J. R. Larus and M. Parkes, ``Using cohort scheduling to enhance server
-  performance,'' in \emph{USENIX Annual Conference}, 2002.
+  performance'', in \emph{USENIX Annual Conference}, 2002.
 \item
   H. C. Lauer and R. M. Needham, ``On the duality of operating system
-  structures,'' \emph{ACM SIGOPS Operating Systems Review}, vol.~13,
+  structures'', \emph{ACM SIGOPS Operating Systems Review}, vol.~13,
   pp.~3--19, April 1979.
 \item
   P. L. Lehman and S. Bing Yao, ``Efficient locking for concurrent
-  operations on b-trees,'' \emph{ACM Transactions on Database Systems
+  operations on b-trees'', \emph{ACM Transactions on Database Systems
   (TODS)}, vol.~6, pp.~650--670, December 1981.
 \item
-  A. Y. Levy, ``Answering queries using views,'' \emph{VLDB Journal},
+  A. Y. Levy, ``Answering queries using views'', \emph{VLDB Journal},
   vol.~10, pp.~270-- 294, 2001.
 \item
   A. Y. Levy, I. Singh Mumick, and Y. Sagiv, ``Query optimization by
-  predicate move-around,'' in \emph{Proceedings of 20th International
+  predicate move-around'', in \emph{Proceedings of 20th International
   Conference on Very Large} \emph{Data Bases}, pp.~96--107, Santiago,
   September 1994.
 \item
   W. Litwin, ``Linear hashing: A new tool for file and table
-  addressing,'' in \emph{Sixth} \emph{International Conference on Very
+  addressing'', in \emph{Sixth} \emph{International Conference on Very
   Large Data Bases (VLDB)}, pp.~212--223, Montreal, Quebec, Canada,
   October 1980.
 \item
   G. M. Lohman, ``Grammar-like functional rules for representing query
-  optimization alternatives,'' in \emph{Proceedings of ACM SIGMOD
+  optimization alternatives'', in \emph{Proceedings of ACM SIGMOD
   International Conference} \emph{on Management of Data}, pp.~18--27,
   Chicago, IL, June 1988.
 \item
   Q. Luo, S. Krishnamurthy, C. Mohan, H. Pirahesh, H. Woo, B. G.
   Lindsay, and J. F. Naughton, ``Middle-tier database caching for
-  e-business,'' in \emph{Proceedings} \emph{of ACM SIGMOD International
+  e-business'', in \emph{Proceedings} \emph{of ACM SIGMOD International
   Conference on Management of Data}, 2002.
 \item
   S. R. Madden and M. J. Franklin, ``Fjording the stream: An
-  architecture for queries over streaming sensor data,'' in
+  architecture for queries over streaming sensor data'', in
   \emph{Proceedings of 12th IEEE International} \emph{Conference on Data
   Engineering (ICDE)}, San Jose, February 2002.
 \item
   V. Markl, G. Lohman, and V. Raman, ``Leo: An autonomic query optimizer
-  for db2,'' \emph{IBM Systems Journal}, vol.~42, pp.~98--106, 2003.
+  for db2'', \emph{IBM Systems Journal}, vol.~42, pp.~98--106, 2003.
 \item
   C. Mohan, ``Aries/kvl: A key-value locking method for concurrency
-  control of multiaction transactions operating on b-tree indexes,'' in
+  control of multiaction transactions operating on b-tree indexes'', in
   \emph{16th International} \emph{Conference on Very Large Data Bases
   (VLDB)}, pp.~392--405, Brisbane, Queens-land, Australia, August 1990.
 \item
   C. Mohan, D. J. Haderle, B. G. Lindsay, H. Pirahesh, and P. M.
   Schwarz, ``Aries: A transaction recovery method supporting
   fine-granularity locking and partial rollbacks using write-ahead
-  logging,'' \emph{ACM Transactions on Database} \emph{Systems (TODS)},
+  logging'', \emph{ACM Transactions on Database} \emph{Systems (TODS)},
   vol.~17, pp.~94--162, 1992.
 \item
   C. Mohan and F. Levine, ``Aries/im: An efficient and high concurrency
-  index management method using write-ahead logging,'' in
+  index management method using write-ahead logging'', in
   \emph{Proceedings of ACM SIG-MOD International Conference on
   Management of Data}, (M. Stonebraker, ed.), pp.~371--380, San Diego,
   CA, June 1992.
 \item
   C. Mohan, B. G. Lindsay, and R. Obermarck, ``Transaction management in
-  the r* distributed database management system,'' \emph{ACM
+  the r* distributed database management system'', \emph{ACM
   Transactions on Database} \emph{Systems (TODS)}, vol.~11,
   pp.~378--396, 1986.
 \item
   E. Nightingale, K. Veerarghavan, P. M. Chen, and J. Flinn, ``Rethink
-  the sync,'' in \emph{Symposium on Operating Systems Design and
+  the sync'', in \emph{Symposium on Operating Systems Design and
   Implementation (OSDI)}, November 2006.
 \item
   OLAP Market Report. Online manuscript.
   \url{http://www.olapreport.com/market.htm}.
 \item
   E. J. O'Neil, P. E. O'Neil, and G. Weikum, ``The lru-k page
-  replacement algorithm for database disk buffering,'' in
+  replacement algorithm for database disk buffering'', in
   \emph{Proceedings of ACM SIGMOD} \emph{International Conference on
   Management of Data}, pp.~297--306, Washington, DC, May 1993.
 \item
   P. E. O'Neil and D. Quass, ``Improved query performance with variant
-  indexes,'' in \emph{Proceedings of ACM-SIGMOD International Conference
+  indexes'', in \emph{Proceedings of ACM-SIGMOD International Conference
   on Management of} \emph{Data}, pp.~38--49, Tucson, May 1997.
 \item
   S. Padmanabhan, B. Bhattacharjee, T. Malkemus, L. Cranston, and M.
   Huras, ``Multi-dimensional clustering: A new data layout scheme in
-  db2,'' in \emph{ACM} \emph{SIGMOD International Management of Data}
+  db2'', in \emph{ACM} \emph{SIGMOD International Management of Data}
   (San Diego, California, June 09-- 12, 2003) \emph{SIGMOD '03},
   pp.~637--641, New York, NY: ACM Press, 2003.
 \item
-  D. Patterson, ``Latency lags bandwidth,'' \emph{CACM}, vol.~47,
+  D. Patterson, ``Latency lags bandwidth'', \emph{CACM}, vol.~47,
   pp.~71--75, October 2004.
 \item
   H. Pirahesh, J. M. Hellerstein, and W. Hasan, ``Extensible/rule-based
-  query rewrite optimization in starburst,'' in \emph{Proceedings of
+  query rewrite optimization in starburst'', in \emph{Proceedings of
   ACM-SIGMOD International Conference on Management of Data},
   pp.~39--48, San Diego, June 1992.
 \item
   V. Poosala and Y. E. Ioannidis, ``Selectivity estimation without the
-  attribute value independence assumption,'' in \emph{Proceedings of
+  attribute value independence assumption'', in \emph{Proceedings of
   23rd International Conference on Very Large Data Bases (VLDB)},
   pp.~486--495, Athens, Greece, August 1997.
 \item
   M. P¨oss, B. Smith, L. Koll´ar, and P.-A. Larson, ``Tpc-ds,
-taking decision support benchmarking to the next level,'' in
+taking decision support benchmarking to the next level'', in
 \emph{SIGMOD 2002}, pp.~582--587.
 \item
   V. Prabakharan, A. C. Arpaci-Dusseau, and R. Arpaci-Dusseau,
-``Analysis and evolution of journaling file systems,'' in
+``Analysis and evolution of journaling file systems'', in
 \emph{Proceedings of USENIX Annual Technical Conference}, April 2005.
 \item
-  R. Ramakrishnan and J. Gehrke, ``Database management systems,''
+  R. Ramakrishnan and J. Gehrke, ``Database management systems'',
   McGraw-Hill, Boston, MA, Third ed., 2003.
 \item
   V. Raman and G. Swart, ``How to wring a table dry: Entropy compression
-  of relations and querying of compressed relations,'' in
+  of relations and querying of compressed relations'', in
   \emph{Proceedings of International} \emph{Conference on Very Large
   Data Bases (VLDB)}, 2006.
 \item
@@ -4526,90 +4528,90 @@ taking decision support benchmarking to the next level,'' in
   1978.
 \item
   A. Reiter, ``A study of buffer management policies for data management
-  systems,'' Technical Summary Report 1619, Mathematics Research Center,
+  systems'', Technical Summary Report 1619, Mathematics Research Center,
   University of Wisconsin, Madison, 1976.
 \item
   D. J. Rosenkrantz, R. E. Stearns, and P. M. Lewis, ``System level
-  concurrency control for distributed database systems,'' \emph{ACM
+  concurrency control for distributed database systems'', \emph{ACM
   Transactions on Database Systems (TODS)}, vol.~3, pp.~178--198, June
   1978.
 \item
   S. Sarawagi, S. Thomas, and R. Agrawal, ``Integrating mining with
-  relational database systems: Alternatives and implications,'' in
+  relational database systems: Alternatives and implications'', in
   \emph{Proceedings of ACM-SIGMOD International Conference on Management
   of Data}, 1998.
 \item
-  R. Sears and E. Brewer, ``Statis: Flexible transactional storage,'' in
+  R. Sears and E. Brewer, ``Statis: Flexible transactional storage'', in
   \emph{Proceedings} \emph{of Symposium on Operating Systems Design and
   Implementation (OSDI)}, 2006.
 \item
   P. G. Selinger, M. Astrahan, D. Chamberlin, R. Lorie, and T. Price,
-  ``Access path selection in a relational database management system,''
+  ``Access path selection in a relational database management system'',
   in \emph{Proceedings of} \emph{ACM-SIGMOD International Conference on
   Management of Data}, pp.~22--34, Boston, June 1979.
 \item
   P. Seshadri, H. Pirahesh, and T. Y. C. Leung, ``Complex query
-  decorrelation,'' in \emph{Proceedings of 12th IEEE International
+  decorrelation'', in \emph{Proceedings of 12th IEEE International
   Conference on Data Engineering} \emph{(ICDE)}, New Orleans, February
   1996.
 \item
   M. A. Shah, S. Madden, M. J. Franklin, and J. M. Hellerstein, ``Java
   support for data-intensive systems: Experiences building the telegraph
-  dataflow system,'' \emph{ACM SIGMOD Record}, vol.~30, pp.~103--114,
+  dataflow system'', \emph{ACM SIGMOD Record}, vol.~30, pp.~103--114,
   2001.
 \item
   L. D. Shapiro, ``Exploiting upper and lower bounds in top-down query
-  optimization,'' \emph{International Database Engineering and
+  optimization'', \emph{International Database Engineering and
   Application Symposium} \emph{(IDEAS)}, 2001.
 \item
   A. Silberschatz, H. F. Korth, and S. Sudarshan, \emph{Database System
   Concepts}. McGraw-Hill, Boston, MA, Fourth ed., 2001.
 \item
   M. Steinbrunn, G. Moerkotte, and A. Kemper, ``Heuristic and randomized
-  optimization for the join ordering problem,'' \emph{VLDB Journal},
+  optimization for the join ordering problem'', \emph{VLDB Journal},
   vol.~6, pp.~191--208, 1997.
 \item
-  M. Stonebraker, ``Retrospection on a database system,'' \emph{ACM
+  M. Stonebraker, ``Retrospection on a database system'', \emph{ACM
   Transactions on} \emph{Database Systems (TODS)}, vol.~5, pp.~225--240,
   1980.
 \item
-  M. Stonebraker, ``Operating system support for database management,''
+  M. Stonebraker, ``Operating system support for database management'',
   \emph{Communications of the ACM (CACM)}, vol.~24, pp.~412--418, 1981.
 \item
-  M. Stonebraker, ``The case for shared nothing,'' \emph{IEEE Database
+  M. Stonebraker, ``The case for shared nothing'', \emph{IEEE Database
   Engineering} \emph{Bulletin}, vol.~9, pp.~4--9, 1986.
 \item
   M. Stonebraker, ``Inclusion of new types in relational data base
-  systems,'' \emph{ICDE}, pp.~262--269, 1986.
+  systems'', \emph{ICDE}, pp.~262--269, 1986.
 \item
   M. Stonebraker, D. J. Abadi, A. Batkin, X. Chen, M. Cherniack, M.
   Ferreira, E. Lau, A. Lin, S. Madden, E. O'Neil, P. O'Neil, A. Rasin,
-  N. Tran, and S. Zdonik, ``C-store: A column oriented dbms,'' in \emph{Proceedings
+  N. Tran, and S. Zdonik, ``C-store: A column oriented dbms'', in \emph{Proceedings
 of the Conference on Very Large Databases (VLDB)}, 2005.
 \item
   M. Stonebraker and U. Cetintemel, ``One size fits all: An idea whose
-  time has come and gone,'' in \emph{Proceedings of the International
+  time has come and gone'', in \emph{Proceedings of the International
   Conference on Data} \emph{Engineering (ICDE)}, 2005.
 \item
   Transaction Processing Performance Council 2006. TPC Benchmark C
   Standard Specification Revision 5.7, \url{http://www.tpc.org/tpcc/spec/tpcc\_current.pdf}, April.
 \item
   T. Urhan, M. J. Franklin, and L. Amsaleg, ``Cost based query
-  scrambling for initial delays,'' \emph{ACM-SIGMOD International
+  scrambling for initial delays'', \emph{ACM-SIGMOD International
   Conference on Management of} \emph{Data}, 1998.
 \item
   R. von Behren, J. Condit, F. Zhou, G. C. Necula, and E. Brewer,
-  ``Capriccio: Scalable threads for internet services,'' in
+  ``Capriccio: Scalable threads for internet services'', in
   \emph{Proceedings of the Ninteenth Symposium on Operating System
   Principles (SOSP-19)}, Lake George, New York, October 2003.
 \item
   M. Welsh, D. Culler, and E. Brewer, ``Seda: An architecture for well-conditioned,
-  scalable internet services,'' in \emph{Proceedings of the
+  scalable internet services'', in \emph{Proceedings of the
   18th Symposium on} \emph{Operating Systems Principles (SOSP-18)},
   Banff, Canada, October 2001.
 \item
   C. Zou and B. Salzberg, ``On-line reorganization of sparsely-populated
-  b+trees,'' pp.~115--124, 1996.
+  b+trees'', pp.~115--124, 1996.
 \end{enumerate}
 
 \end{document}
