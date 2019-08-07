@@ -1,0 +1,816 @@
+\hypertarget{basic-techniques}{%
+\chapter{Basic Techniques}\label{basic-techniques}}
+
+B-trees enable efficient retrieval of records in the native sort order
+the index because, in a certain sense, B-trees capture and preserve the
+result of a sort operation. Moreover, they preserve the sort effort in a
+representation that can accommodate insertions, deletions, and updates.
+The relationship between B-trees and sorting can be exploited in many
+ways; the most common ones are that a sort operation can be avoided if
+an appropriate B-tree exists and that the most efficient algorithm for
+B-tree creation eschews random ``insert'' operations and instead pays
+the cost of an initial sort for the benefit of efficient ``append''
+operations.
+
+Figure 2.1 illustrates how a B-tree index can preserve or cache the sort
+effort. With the output of a sort operation, the B-tree with root, leaf
+nodes, etc. can be created very efficiently. A subsequent scan can
+retrieve data sorted without additional sort effort. In addition to
+preserving the sort effort over an arbitrary length of time, B-trees
+also permit efficient insertions and deletions, retaining their native
+sort order and enabling efficient scans in sorted order at any time.
+
+Fig. 2.1 Caching the sort effort in a B-tree.
+
+Ordered retrieval aids many database operations, in particular
+subsequent join and grouping operations. This is true if the list of
+sort keys required in the subsequent operation is precisely equal to or
+a prefix of that in the B-tree. It turns out, however, that B-trees can
+save a lot of sort effort in many more cases. A later section will
+consider the relationship between B-tree indexes and database query
+operations in detail.
+
+B-trees share many of their characteristics with binary trees, raising
+the question why binary trees are commonly used for in-memory data
+structures and B-trees for on-disk data. The reason is quite simple:
+disk drives have always been block-access devices, with a high overhead
+per access. B-trees exploit disk pages by matching the node size to the
+page size, e.g., 4 KB. In fact, B-trees on today's high-bandwidth disks
+perform best with nodes of multiple pages, e.g., 64 KB or 256 KB.
+Inasmuch as main memory should be treated as a block-access device when
+accessed through CPU caches and their cache lines, B-trees in memory
+also make sense. Later sections will resume this discussion of memory
+hierarchies and their effect on optimal data structures and algorithm
+for indexes and specifically B-trees.
+
+B-trees are more similar to 2-3-trees, in particular as both data
+structures have a variable number of keys and child pointers in a node.
+In fact, B-trees can be seen as a generalization of 2-3-trees. Some
+books treat them both as special cases of ($a,b$)-trees with
+$a \geq 2$ and $b \geq 2a − 1$ {[}92{]}. The number of child
+pointers in a canonical B-tree node varies between $N$ and
+$2N − 1$. For a small page size and a particularly large key size,
+this might indeed be the range between $2$ and $3$. The representation of a
+single node in a 2-3-tree by linking two binary nodes also has a
+parallel in B-trees, discussed later as B\textsuperscript{link}-trees.
+
+Figure 2.2 shows a ternary node in a 2-3-tree represented by two binary
+nodes, one pointing to the other half of the ternary node rather than a
+child. There is only one pointer to this ternary node from a parent
+node, and the node has three child pointers.
+
+In a perfectly balanced tree such as a B-tree, it makes sense to count
+the levels of nodes not from the root but from the leaves. Thus, leaves
+are sometimes called level-0 nodes, which are children of level-1 nodes,
+etc. In addition to the notion of child pointers, many family terms are
+used in connection with B-trees: parent, grandparent, ancestor,
+descendent, sibling, and cousin. Siblings are children of the same
+parent node. Cousins are nodes in the same B-tree level with different
+parent nodes but the same grandparent node. If the first common ancestor
+is a greatgrandparent, the nodes are second cousins, etc. Family
+analogies are not used throughout, however. Two siblings or cousins with
+adjoining key ranges are called neighbors, because there is no commonly
+used term for such siblings in families. The two neighbor nodes are
+called left and right neighbors; their key ranges are called the
+adjacent lower and upper key ranges.
+
+Fig. 2.2 A ternary node in a 2-3-tree represented with binary nodes.
+
+In most relational database management systems, the B-tree code is part
+of the access methods module within the storage layer, which also
+includes buffer pool management, lock manager, log manager, and more.
+The relational layer relies on the storage layer and implements query
+optimization, query execution, catalogs, and more. Sorting and index
+maintenance span those two layers. For example, large updates may use an
+update execution plan similar to a query execution plan to maintain each
+B-tree index as efficiently as possible, but individual B-tree
+modifications as well as read-ahead and write-behind may remain within
+the storage layer. Details of such advanced update and prefetch
+strategies will be discussed later.
+
+In summary:
+
+\begin{itemize}
+\item
+  B-trees are indexes optimized for paged environments, i.e., storage
+  not supporting byte access. A B-tree node occupies a page or a set of
+  contiguous pages. Access to individual records requires a buffer pool
+  in byte-addressable storage such as RAM.
+\item
+  B-trees are ordered; they effectively preserve the effort spent on
+  sorting during index creation. Differently than sorted arrays, B-trees
+  permit efficient insertions and deletions.
+\item
+  Nodes are leaves or branch nodes. One node is distinguished as root
+  node.
+\item
+  Other terms to know: parent, grandparent, ancestor, child, descendent,
+  sibling, cousin, neighbor.
+\item
+  Most implementations maintain the sort order within each node, both
+  leaf nodes and branch nodes, in order to enable efficient binary
+  search.
+\item
+  B-trees are balanced, with a uniform path length in root-to-leaf
+  searches. This guarantees uniformly efficient search.
+\end{itemize}
+
+\hypertarget{data-structures}{%
+\section{Data Structures}\label{data-structures}}
+
+In general, a B-tree has three kinds of nodes: a single root, a lot of
+leaf nodes, and as many branch nodes as required to connect the root and
+the leaves. The root contains at least one key and at least two child
+pointers; all other nodes are at least half full at all times. Usually
+all nodes have the same size, but this is not truly required.
+
+The original design for B-trees has user data in all nodes. The design
+used much more commonly today holds user data only in the leaf nodes.
+The root node and the branch nodes contain only separator keys that
+guide the search algorithm to the correct leaf node. These separator
+keys may be equal to keys of current or former data, but the only
+requirement is that they can guide the search algorithm.
+
+This design has been called B\textsuperscript{+}-tree but it is nowadays
+the default design when B-trees are discussed. The value of this design
+is that deletion can affect only leaf nodes, not branch nodes and that
+separator keys in branch nodes can be freely chosen within the
+appropriate key range. If variable-length records are supported as
+discussed later, the separator keys can often be very short. Short
+separator keys increase the node fanout, i.e., the number of child
+pointers per node, and decrease the B-tree height, i.e., the number of
+nodes visited in a root-to-leaf search.
+
+The records in leaf nodes contain a search key plus some associated
+information. This information can be all the columns associated with a
+table in a database, it can be a pointer to a record with all those
+columns, or it can be anything else. In most parts of this survey, the
+nature, contents, and semantics of this information are not important
+and not discussed further.
+
+Fig. 2.3 B-tree with root, branch nodes, and leaves.
+
+In both branch nodes and leaves, the entries are kept in sorted order.
+The purpose is to enable fast search within each node, typically using
+binary search. A branch node with $N$ separator keys contains
+$N$ + 1 child pointers, one for each key range between neighboring
+separator keys, one for the key, range below the smallest separator key,
+and one for the key range above the largest separator key.
+
+Figure 2.3 illustrates a B-tree more complex than the one in Figure 1.1,
+including one level of branch nodes between the leaves and the root. In
+the diagram, the root and all branch nodes have fan-outs of 2 or 3. In a
+B-tree index stored on disk, the fan-out is determined by the sizes of
+disk pages, child pointers, and separator keys. Keys are omitted in
+Figure 2.3 and in many of the following figures unless they are required
+for the discussion at hand.
+
+Among all possible node-to-node pointers, only the child pointers are
+truly required. Many implementations also maintain neighbor pointers,
+sometimes only between leaf nodes and sometimes only in one direction.
+Some rare implementations have used parent pointers, too, e.g., a
+Siemens product {[}80{]}. The problem with parent pointers is that they
+force updates in many child nodes when a parent node is moved or split.
+In a disk-based B-tree, all these pointers are represented as page
+identifiers.
+
+B-tree nodes may include many additional fields, typically in a page
+header. For consistency checking, there are table or index identifier
+plus the B-tree level, starting with 0 for leaf pages; for space
+management, there is a record count; for space management with
+variable-size records, there are slot count, byte count, and lowest
+record offset; for data compression, there may be a shared key prefix
+including its size plus information as required for other compression
+techniques; for write-ahead logging and recovery, there usually is a
+Page LSN (log sequence number) {[}95{]}; for concurrency control, in
+particular in shared-memory systems, there may be information about
+current locks; and for efficient key range locking, consistency
+checking, and page movement as in defragmentation, there may be fence
+keys, i.e., copies of separator keys in ancestor pages. Each field, its
+purpose, and its use are discussed in a subsequent section.
+
+\begin{itemize}
+\item
+  Leaf nodes contain key values and some associated information. In most
+  B-trees, branch nodes including the root node contain separator keys
+  and child pointers but no associated information.
+\item
+  Child pointers are essential. Sibling pointers are often implemented
+  but not truly required. Parent pointers are hardly ever employed.
+\item
+  B-tree nodes usually contain a fixed-format page header, a
+  variable-size array of fixed-size slots, and a variable-size data
+  area. The header contains a slot counter, information pertaining to
+  compression and recovery, and more. The slots serve space management
+  for variable-size records.
+\end{itemize}
+
+\hypertarget{sizes-tree-height-etc.}{%
+\section{Sizes, Tree Height, etc.}\label{sizes-tree-height-etc.}}
+
+In traditional database designs, the typical size of a B-tree node is
+4--8 KB. Larger B-tree nodes might seem more efficient for today's disk
+drives based on multiple analyses {[}57, 86{]} but nonetheless are
+rarely used in practice. The size of a separator key can be as large as
+a record but it can also be much smaller, as discussed later in the
+section on prefix B-trees. Thus, the typical fan-out, i.e., the number
+of children or of child pointers, is sometimes only in the tens,
+typically in the hundreds, and sometimes in the thousands.
+
+If a B-tree contains $N$ records and $L$ records per leaf, the
+B-tree requires $N/L$ leaf nodes. If the average number of children
+per parent is $F$, the number of branch levels is
+$\log_F(N/L)$. For example, the B-tree in
+Figure 2.3 has 9 leaf nodes, a fan-out $F = 3$, and thus
+$\log_3 9 = 2$ branch levels. Depending on the convention,
+the height of this B-tree is $2$ (levels above the leaves) or $3$ (levels
+including the leaves). In order to reflect the fact that the root node
+usually has a different fan-out, this expression is rounded up. In fact,
+after some random insertions and deletions, space utilization in the
+nodes will vary among nodes. The average space utilization in B-trees is
+usually given as about 70\% {[}75{]}, but various policies used in
+practice and discussed later may result in higher space utilization. Our
+goal here is not to be precise but to show crucial effects, basic
+calculations, and the orders of magnitude of various choices and
+parameters.
+
+If a single branch node can point to hundreds of children, then the
+distance between root and leaves is usually very small and 99\% or more
+of all B-tree nodes are leaves. In other words, great-grandparents and
+even more distant ancestors are rare in practice. Thus, for the
+performance of random searches based on root-to-leaf B-tree traversals,
+treatment of only 1\% of a B-tree index and thus perhaps only 1\% of a
+database determine much of the performance. For example, keeping the
+root of a frequently used B-tree index in memory benefits many searches
+with little cost in memory or cache space.
+
+\begin{itemize}
+\item
+  The B-tree depth (nodes along a root-to-leaf path) is logarithmic in
+  the number of records. It is usually small.
+\item
+  Often more than 99\% of all nodes in a B-tree are leaf nodes.
+\item
+  B-tree pages are filled between 50\% and 100\%, permitting insertions
+  and deletions as well as splitting and merging nodes. Average
+  utilization after random updates is about 70\%.
+\end{itemize}
+
+\hypertarget{algorithms}{%
+\section{Algorithms}\label{algorithms}}
+
+The most basic, and also the most crucial, algorithm for B-trees is
+search. Given a specific value for the search key of a B-tree or for a
+prefix thereof, the goal is to find, correctly and as efficiently as
+possible, all entries in the B-tree matching the search key. For range
+queries, the search finds the lowest key satisfying the predicate.
+
+A search requires one root-to-leaf pass. In each branch node, the search
+finds the pair of neighboring separator keys smaller and larger than the
+search key, and then continues by following the child pointer between
+those two separator keys.
+
+The number of comparisons during binary search among $L$ records in
+a leaf is $\log_2(L)$, ignoring rounding effects.
+Similarly, binary search among $F$ child pointers in a branch node
+requires $\log_2(F)$ comparisons. The number of leaf
+nodes in a B-tree with $N$ records and $L$ records per leaf is
+$N/L$. The depth of a B-tree is
+$\log_F(N/L)$, which is also the number of
+branch nodes visited in a root-to-leaf search. Together, the number of
+comparisons in a search inspecting both branch nodes and a leaf node is
+$\log_F(N/L) \times \log_2(F)
++ \log_2(L)$. By elementary rules for algebra with
+logarithms, the product term simplifies to
+$\log_2(N/L)$ and then the entire expression
+simplifies to $\log_2(N)$. In other words, node size
+and record size may produce secondary rounding effects in this
+calculation but the record count is the only primary influence on the
+number of comparisons in a root-to-leaf search in a B-tree.
+
+Figure 2.4 shows parts of a B-tree including some key values. A search
+for the value 31 starts at the root. The pointer between the key values
+7 and 89 is followed to the appropriate branch node. As the search key
+is larger than all keys in that node, the right-most pointer is followed
+to a leaf. A search within that node determines that the key value 31
+does not exist in the B-tree. A search for key value 23 would lead to
+the center node in Figure 2.4, assuming a convention that a separator
+key serves as inclusive upper bound for a key range. The search cannot
+terminate when the value 23 is found at the branch level. This is
+because the purpose of most B-tree searches is retrieving the
+information attached to each key and information contents exists only in
+leaves in most B-tree implementations. Moreover, as can be seen for key
+value 15 in Figure 2.4, a key that might have existed at some time in a
+valid leaf entry may continue to serve as separator key in a nonleaf
+node even after the leaf entry has been removed.
+
+Fig. 2.4 B-tree with root-to-leaf search.
+
+An exact-match query is complete after the search, but a range query
+must scan leaf nodes from the low end of the range to the high end. The
+scan can employ neighbor pointers if they exist in the B-tree.
+Otherwise, parent and grandparent nodes and their child pointers must be
+employed. In order to exploit multiple asynchronous requests, e.g., for
+a B-tree index stored in a disk array or in network-attached storage,
+parent and grandparent nodes are needed. Range scans relying on neighbor
+pointers are limited to one asynchronous prefetch at-a-time and
+therefore unsuitable for arrays of storage devices or for virtualized
+storage.
+
+Insertions start with a search for the correct leaf to place the new
+record. If that leaf has the required free space, the insertion is
+complete. Otherwise, a case called ``overflow,'' the leaf needs to be
+split into two leaves and a new separator key must be inserted into the
+parent. If the parent is already full, the parent is split and a
+separator key is inserted into the appropriate grandparent node. If the
+root node needs to be split, the B-tree grows by one more level, i.e., a
+new root node with two children and only one separator key. In other
+words, whereas the depth of many tree data structures grows at the
+leaves, the depth of B-trees grows at the root. This is what guarantees
+perfect balance in a B-tree. At the leaf level, B-trees grow only in
+width, enabled by the variable number of child nodes in each parent
+node. In some implementations of B-trees, the old root page becomes the
+new root page and the old root contents are distributed into the two
+newly allocated nodes. This is a valuable technique if modifying the
+page identifier of the root node in the database catalogs is expensive
+or if the page identifier is cached in compiled query execution plans.
+
+Figure 2.5 shows the B-tree of Figure 2.4 after insertion of the key 22
+and a resulting leaf split. Note that the separator key propagated to
+the parent node can be chosen freely; any key value that separates the
+two nodes resulting from the split is acceptable. This is particularly
+useful for variable-length keys: the shortest possible separator key can
+be employed in order to reduce space requirements in the parent node.
+
+Fig. 2.5 B-tree with insertion and leaf split.
+
+Some implementations of B-trees delay splits as much as possible, for
+example by load balancing among siblings such that a full node can make
+space for an insertion. This design raises the code complexity but also
+the space utilization. High space utilization enables high scan rates if
+data transfer from storage devices is the bottleneck. Moreover, splits
+and new page allocations may force additional seek operations during a
+scan that are expensive in disk-based B-trees.
+
+Deletions also start with a search for the correct leaf that contains
+the appropriate record. If that leaf ends up less than half full, a case
+called ``underflow,'' either load balancing or merging with a sibling
+node can ensure the traditional B-tree invariant that all nodes other
+than the root be at least half full. Merging two sibling nodes may
+result in underflow in their parent node. If the only two children of
+the root node merge, the resulting node becomes the root and the old
+root is removed. In other words, the depth of B-trees both grows and
+shrinks at the root. If the page identifier of the root node is cached
+as mentioned earlier, it might be practical to move all contents to the
+root node and de-allocate the two children of the root node.
+
+Figure 2.6 shows the B-tree from Figure 2.5 after deletion of key value
+23. Due to underflow, two leaves were merged. Note that the separator
+key 23 was not removed because it still serves the required function.
+
+Many implementations, however, avoid the complexities of load balancing
+and of merging and simply let underflows persist. A subsequent insertion
+or defragmentation will presumably resolve it later. A recent study of
+worst case and average case behaviors of B-trees concludes that ``adding
+periodic rebuilding of the tree,... the data structure... is
+theoretically superior to standard B\textsuperscript{+}-trees in many
+ways {[}and{]}... rebalancing on deletion can be considered harmful''
+{[}116{]}.
+
+Fig. 2.6 Deletion with load balancing.
+
+Updates of key fields in B-tree records often require deletion in one
+place and insertion in another place in the B-tree. Updates of nonkey
+fixed-length fields happen in place. If records contain variable-length
+fields, a change in the record size might force overflow or underflow
+similar to insertion or deletion.
+
+The final basic B-tree algorithm is B-tree creation. Actually, there are
+two algorithms, characterized by random insertions and by prior sorting.
+Some database products used random insertions in their initial releases
+but their customers found creation of large indexes very slow. Sorting
+the future index entries prior to B-tree creation permits many
+efficiency gains, from massive I/O savings to various techniques saving
+CPU effort. As the future index grows larger than the available buffer
+pool, more and more insertions require reading, updating, and writing a
+page. A database system might also require logging each such change in
+the recovery log, whereas most systems nowadays employ non-logged index
+creation, which is discussed later. Finally, a stream of append
+operations also encourages a B-tree layout on disk that permits
+efficient scans with a minimal number of disk seeks. Efficient sort
+algorithms for database systems have been discussed elsewhere {[}46{]}.
+
+\begin{itemize}
+\item
+  If binary search is employed in each node, the number of comparisons
+  in a search is independent of record and node sizes except for
+  rounding effects.
+\end{itemize}
+
+\begin{itemize}
+\item
+  B-trees support both equality (exact-match) predicates and range
+  predicate. Ordered scans can exploit neighbor pointers or ancestor
+  nodes for deep (multi-page) read-ahead.
+\item
+  Insertions use existing free space or split a full node into two
+  half-full nodes. A split requires adding a separator key and a child
+  pointer to the parent node. If the root node splits, a new root node
+  is required and the B-tree grows by one level.
+\item
+  Deletions may merge half-full nodes. Many implementations ignore this
+  case and rely on subsequent insertions or defragmentation
+  (reorganization) of the B-tree.
+\item
+  Loading B-trees by repeated random insertion is very slow; sorting
+  future B-tree entries permits efficient index creation.
+\end{itemize}
+
+\hypertarget{b-trees-in-databases}{%
+\section{B-trees in Databases}\label{b-trees-in-databases}}
+
+Having reviewed the basics of B-trees as a data structure, it is also
+required to review the basics of B-trees as indexes, for example in
+database systems, where B-tree indexes have been essential and
+ubiquitous for decades. Recent developments in database query processing
+have focused on improvements of large scans, e.g., by sharing scans
+among concurrent queries {[}33, 132{]}, by a columnar data layout that
+reduces the scan volume in many queries {[}17, 121{]}, or by predicate
+evaluation by special hardware, such as FPGAs. The advent of flash
+devices in database servers will likely result in more index usage in
+database query processing --- their fast access times encourage small
+random accesses whereas traditional disk drives with high capacity and
+high bandwidth favor large sequential accesses. With the B-tree index
+the default choice in most systems, the various roles and usage patterns
+of B-tree indexes in databases deserve attention. We focus here on
+relational databases because their conceptual model is fairly close to
+the records and fields used in the storage layer of all database systems
+as well as other storage services.
+
+In a relational database, all data is logically organized in tables with
+columns identified by name and rows identified by unique values in
+columns forming the table's primary key. Relationships among tables are
+captured in foreign key constraints. Relationships among rows are
+expressed in foreign key columns, which contain copies of primary key
+values elsewhere. Other forms of integrity constraints include
+uniqueness of one or more columns; uniqueness constraints are often
+enforced using a B-tree index.
+
+The simplest representation for a database table is a heap, a collection
+of pages holding records in no particular order, although often in the
+order of insertion. Individual records are identified and located by
+means of page identifier and slot number (see below in Section 3.3),
+where the page identifier may include a device identifier. When a record
+grows due to an update, it might need to move to a new page. In that
+case, either the original location retains ``forwarding'' information or
+all references to the old location, e.g., in indexes, must be updated.
+In the former case, all future accesses incur additional overhead,
+possibly the cost of a disk read; in the latter case, a seemingly simple
+change may incur a substantial unforeseen and unpredictable cost.
+
+Figure 2.7 shows records (solid lines) and pages (dashed lines) within a
+heap file. Records are of variable size. Modifications of two records
+have changed their sizes and forced moving the record contents to
+another page with forwarding pointers (dotted lines) left behind in the
+original locations. If an index points to records in this file,
+forwarding does not affect the index contents but does affect the access
+times in subsequent queries.
+
+If a B-tree structure rather than a heap is employed to store all
+columns in a table, it is called a primary index here. Other commonly
+used names include clustered index or index-organized table. In a
+secondary index, also commonly called a non-clustered index, each entry
+must contain a reference to a row or a record in the primary index. This
+reference can be a search key in a primary index or it can be a record
+identifier including a page identifier. The term ``reference'' will
+often be used below to refer to either one. References to records in a
+primary index are also called bookmarks in some contexts.
+
+\begin{quote}
+\includegraphics[width=2.37667in,height=0.49in]{./media/image1.png}
+\end{quote}
+
+Fig. 2.7 Heap file with variable-length records and forwarding pointers.
+
+Fig. 2.8 Index navigation with a search key.
+
+Both designs, reference by search key and reference by record
+identifier, have advantages and disadvantages {[}68{]}; there is no
+perfect design. The former design requires a root-to-leaf search in the
+primary index after each search in the secondary index. Figure 2.8
+illustrates the double index search when the primary data structure for
+a table is a primary index and references in secondary indexes use
+search keys in the primary index. The search key extracted from the
+query requires an index search and root-to-leaf traversal in the
+secondary index. The information associated with a key in the secondary
+index is a search key for the primary index. Thus, after a successful
+search in the secondary index, another B-tree search is required in the
+primary index including a root-to-leaf traversal there.
+
+The latter design permits faster access to records in the primary index
+after a search in the secondary index. When a leaf in the primary index
+splits, however, this design requires many updates in all relevant
+secondary indexes. These updates are expensive with many I/O operations
+and B-tree searches, they are infrequent enough to be always surprising,
+they are frequent enough to be disruptive, and they impose a substantial
+penalty due to concurrency control and logging for these updates.
+
+A combination is also possible, with the page identifier as a hint and
+the search key as the fallback. This design has some intrinsic
+difficulties, e.g., when a referenced page is de-allocated and later
+reallocated for a different data structure. Finally, some systems employ
+clustering indexes over heap files; their goal is to keep the heap file
+sorted if possible but nonetheless enable fast record access via record
+identifiers.
+
+In databases, all B-tree keys must be unique, even if the user-defined
+B-tree key columns are not. In a primary index, unique keys are required
+for correct retrieval. For example, each reference found in a secondary
+index must guide a query to exactly one record in the primary index ---
+therefore, the search keys in the primary index must be unambiguous in
+the reference-by-search-key design. If the user-defined search key for a
+primary index is a person's lastname, values such as ``Smith'' are unlikely
+to safely identify individual records in the primary index.
+
+In a secondary index, unique keys are required for correct deletion.
+Otherwise, deletion of a logical row and its record in a primary index
+might be followed by deletion of the wrong entry in a non-unique
+secondary index. For example, if the user-defined search in a secondary
+index is a person's first name, deletion of a record in the primary
+index containing ``Bob Smith'' must delete only the correct matching
+record in the secondary index, not all records with search key ``Bob''
+or a random such record.
+
+If the search key specified during index creation is unique due to
+uniqueness constraints, the user-defined search key is sufficient. Of
+course, once a logical integrity constraint is relied upon in an index
+structure, dropping the integrity constraint must be prevented or
+followed by index reorganization. Otherwise, some artificial field must
+be added to the user-defined index key. For primary indexes, some
+systems employ a globally unique ``database key'' such as a microsecond
+timestamp, some use an integer value unique within the table, and some
+use an integer value unique among B-tree entries with the same value in
+the user-defined index key. For secondary indexes, most systems simply
+add the reference to the search key of the primary index.
+
+B-tree entries are kept sorted on their entire unique key. In a primary
+index, this aids efficient retrieval; in a secondary index, it aids
+efficient deletion. Moreover, the sorted lists of references for each
+unique search key enable efficient list intersection and union. For
+example, for a query predicate ``A = 5 and B = 15,'' sorted lists of
+references can be obtained from indexes on columns A and B and their
+intersection computed by a simple merge algorithm.
+
+The relationships between tables and indexes need not be as tight and
+simple as discussed so far. A table may have calculated columns that are
+not stored at all, e.g., the difference (interval) between two date
+(timestamp) columns. On the other hand, a secondary index might be
+organized on such a column, and in this case necessarily store a copy of
+the column. An index might even include calculated columns that
+effectively copy values from another table, e.g., the table of order
+details might include a customer identifier (from the table of orders)
+or a customer name (from the table of customers), if the appropriate
+functional dependencies and foreign key constraints are in place.
+
+Another relationship that is usually fixed, but need not be, is the
+relationship between uniqueness constraints and indexes. Many systems
+automatically create an index when a uniqueness constraint is defined
+and drop the index when the constraint is dropped. Older systems did not
+support uniqueness constraints at all but only unique indexes. The index
+is created even if an index on the same column set already exists, and
+the index is dropped even if it would be useful in future queries. An
+alternative design merely requires that some index with the appropriate
+column set exists while a uniqueness constraint is active. For instant
+definition of a uniqueness constraint with existing useful index, a
+possible design counts the number of unique keys during each insertion
+and deletion in any index. In a sorted index such as a B-tree, a count
+should be maintained for each key prefix, i.e., for the first key field
+only, the first and second key fields together, etc. The required
+comparisons are practically free as they are a necessary part of
+searching for the correct insertion or deletion point. A new uniqueness
+constraint is instantly verified if the count of unique key values is
+equal to the record count in the index.
+
+Finally, tables and indexes might be partitioned horizontally (into sets
+of rows) or vertically (into sets of columns), as will be discussed
+later. Partitions usually are disjoint but this is not truly required.
+Horizontal partitioning can be applied to a table such that all indexes
+of that table follow the same partitioning rule, sometimes called
+``local indexes.'' Alternatively, partitioning can be applied to each
+index individually, with secondary indexes partitioned with their own
+partitioning rule different from the primary index, which is sometimes
+called ``global indexes.'' In general, physical database design or the
+separation of logical tables and physical indexes remains an area of
+opportunity and innovation.
+
+\begin{itemize}
+\item
+  B-trees are ubiquitous in databases and information retrieval.
+\item
+  If multiple B-trees are related, e.g., the primary index and the
+  secondary index of a database table, pointers can be physical
+  addresses (record identifiers) or logical references (search keys in
+  the primary index). Neither choice is perfect, both choices have been
+  used.
+\item
+  B-tree entries must be unique in order to ensure correct updates and
+  deletions. Various mechanisms exist to force uniqueness by adding an
+  artificial key value.
+\item
+  Traditional database design rigidly connects tables and B-trees, much
+  more rigidly then truly required.
+\end{itemize}
+
+\hypertarget{b-trees-versus-hash-indexes}{%
+\section{B-trees Versus Hash
+Indexes}\label{b-trees-versus-hash-indexes}}
+
+It might seem surprising that B-tree indexes have become ubiquitous
+whereas hash indexes have not, at least not in database systems. Two
+arguments seem to strongly favor hash indexes. First, hash indexes
+should save I/O costs due to a single I/O per look-up, whereas B-trees
+require a complete root-to-leaf traversal for each search. Second, hash
+indexes and hash values should also save CPU effort due to efficient
+comparisons and address calculations. Both of these arguments have only
+very limited validity, however, as explained in the following
+paragraphs. Moreover, B-trees have substantial advantages over hash
+indexes with respect to index creation, range predicates, sorted
+retrieval, phantom protection in concurrency control, and more. These
+advantages, too, are discussed in the following paragraphs. All
+techniques mentioned here are explained in more depth in subsequent
+sections.
+
+With respect to I/O savings, it turns out that fairly simple
+implementation techniques can render B-tree indexes competitive with
+hash indexes in this regard. Most B-trees have a fan-out of 100s or
+1,000s. For example, for node of 8 KB and records of 20 bytes, 70\%
+utilization means 140 child nodes per parent node. For larger node sizes
+(say 64 KB), good defragmentation (enabling run-length encoding of child
+pointers, say 2 bytes on average), key compression using prefix and
+suffix truncation (say 4 bytes on average per entry), 70\% utilization
+means 5,600 child nodes per parent node. Thus, root-to-leaf paths are
+short and more than 99\% or even 99.9\% of pages in a B-tree are leaf
+nodes. These considerations must be combined with the traditional rule
+that many database servers run with memory size equal to 1--3\% of
+storage size. Today and in the future, the percentage might be higher,
+up to 100\% for in-memory databases. In other words, for any B-tree
+index that is ``warm'' in the buffer pool, all branch nodes will be
+present in the buffer pool. Thus, each B-tree search only requires a
+single I/O, the leaf page. Moreover, the branch nodes could be fetched
+into the buffer pool in preparation of repeated look-up operations,
+perhaps even pinned in the buffer pool. If they are pinned, further
+optimizations could be applied, e.g., spreading separator keys into a
+separate array such that interpolation search is most effective,
+replacing or augmenting child pointers in form of page identifiers with
+child pointers in form of memory pointers, etc.
+
+Figure 2.9 illustrates the argument. All B-tree levels but the leaf
+nodes easily fit into the buffer pool in RAM memory. For leaf pages, a
+buffer pool might employ the least-recently-used (LRU) replacement
+policy. Thus, for searches with random search keys, only a single I/O
+operation is required, similar to a hash index if one is available in a
+database system.
+
+With respect to CPU savings, B-tree indexes can compete with hash
+indexes using a few simple implementation techniques. B-tree indexes
+support a wide variety of search keys, but they also support very simple
+ones such as hash values. Where hash indexes can be used, a B-tree on
+hash values will also provide sufficient functionality. In other cases,
+a ``poor man's normalized key'' can be employed and even be sufficient,
+rendering all additional comparison effort unnecessary. Later sections
+discuss normalized keys, poor man's normalized keys, and caching poor
+man's normalized keys in the ``indirection vector'' that is required for
+variable-size records. In sum, poor man's normalized keys and the
+indirection vector can behave similarly to hash values and hash buckets.
+
+Fig. 2.9 B-tree levels and buffering.
+
+B-trees also permit direct address calculation. Specifically,
+interpolation search may guide the search faster than binary search. A
+later section discusses interpolation search including avoiding
+worst-case behavior of pure interpolation by switching to binary search
+after two interpolation steps, and more.
+
+While B-tree indexes can be competitive with hash indexes based on a few
+implementation techniques, B-trees also have distinct advantages over
+hash indexes. For example, space management in B-trees is very
+straightforward. In the simplest implementations, full nodes are split
+into two halves and empty nodes are removed. Multiple schemes have been
+invented for hash indexes to grow gracefully, but none seems quite as
+simple and robust. Algorithms for graceful shrinking of hash indexes are
+not widely known.
+
+Probably the strongest arguments for B-trees over hash indexes pertain
+to multi-field indexes and to nonuniform distributions of key values. A
+hash index on multiple fields requires search keys for all those fields
+such that a hash value can be calculated. A B-tree index, on the other
+hand, can efficiently support exact-match queries for a prefix of the
+index key, i.e., any number of leading index fields. In this way, a
+B-tree with $N$ search keys can be as useful as $N$ hash
+indexes. In fact, B-tree indexes can support many other forms of
+queries; it is not even required that the restricted fields are leading
+fields in the B-tree's sort order {[}82{]}.
+
+With respect to nonuniform (``skewed'') distributions of key values,
+imagine a table with 10\textsuperscript{9} rows that needs a secondary
+index on a column with the same value in 10\% of the rows. A hash index
+requires introduction of overflow pages, with additional code for index
+creation, insertion, search, concurrency control, recovery, consistency
+checks, etc.
+
+For example, when a row in the table is deleted, an expensive search is
+required before the correct entry in the secondary index can be found
+and removed, whereupon overflow pages might need to be merged. In a
+B-tree, entries are always unique, if necessary by appending a field to
+the search key as discussed earlier. In hash indexes, the additional
+code requires additional execution time as well as additional effort for
+testing and maintenance. Due to the well-defined sort order in B-trees,
+neither special code nor extra time is required in any of the index
+functions.
+
+Another strong argument in favor of B-trees is index creation. After
+extracting future index entries and sorting them, B-tree creation is
+simple and very efficient, even for the largest data collections. An
+efficient, general-purpose sorting algorithm is readily available in
+most systems managing large data. Equally efficient index creation for
+hash indexes would require a special-purpose algorithm, if it is
+possible at all. Index creation by repeated random insertions is
+extremely inefficient for both B-trees and hash indexes. Techniques for
+online index creation (with concurrent database updates) are well known
+and widely implemented for B-trees but not for hash indexes.
+
+An obvious advantage of B-trees over hash indexes is the support for
+ordered scans and for range predicates. Ordered scans are important for
+key columns and set operations such as merge join and grouping; range
+predicates are usually more important for nonkey columns. In other
+words, B-trees are superior to hash indexes for both key columns and
+nonkey columns in relational databases, also known as dimensions and
+measures in online analytical processing. Ordering also has advantages
+for concurrency control, in particular phantom protection by means of
+key range locking (covered in detail later) rather than locking key
+values only.
+
+Taken together, these arguments favor B-trees over hash indexes as a
+general indexing technique for databases and many other data
+collections. Where hash indexes seem to have an advantage, appropriate
+B-tree implementation techniques minimize it. Thus, very few database
+implementation teams find hash indexes among the opportunities or
+features with a high ratio of benefit and effort, in particular if
+B-tree indexes are required in any case in order to support range
+queries and ordered scans.
+
+While nodes of 10 KB likely result in B-trees with multiple levels of
+branch nodes, nodes of 1 MB probably do not. In other words, the
+considerations above may apply to B-tree indexes on flash storage but
+probably not on disks. For disks, it is probably best to cache all
+branch nodes in memory and to employ fairly small leaf nodes such that
+neither transfer bandwidth nor buffer space is wasted on unwanted
+records.
+
+\begin{itemize}
+\item
+  B-tree indexes are ubiquitous, whereas hash indexes are not, even
+  though hash indexes promise exact-match look-up with direct address
+  calculation in the hash directory and a single I/O.
+\item
+  B-tree software can provide similar benefits if desired. In addition,
+  B-trees support efficient index creation based on sorting, support for
+  exact match predicates and for partial predicates, graceful
+  degradation in case of duplicate or distribution skew among the key
+  values, and ordered scans.
+\end{itemize}
+
+\hypertarget{summary}{%
+\section{Summary}\label{summary}}
+
+In summary of this section on the basic data structure, B-trees are
+ordered, balanced search trees optimized for block-access devices such
+as disks. They guarantee good performance for various types of searches
+well as for insertions, deletions, and updates. Thus, they are
+particularly suitable to databases and in fact have been ubiquitous in
+databases for decades.
+
+Over time, many techniques have been invented and implemented beyond the
+basic algorithms and data structures. These practical improvements are
+covered in the next few sections.
+
+The present section focuses on data structures and algorithms found in
+mature data management systems but usually not in college-level text
+books; the subsequent sections cover transactional techniques, B-trees
+and their usage in database query processing, and B-tree utilities.
+
+While only a single sub-section below is named ``data compression,''
+almost all sub-sections pertain to compression in some form: storing
+fewer bytes per record, describing multiple records together, comparing
+fewer bytes in each search, modifying fewer bytes in each update, and
+avoiding fragmentation and wasted space. Efficiency in space and time is
+the theme of this section.
+
+The following sub-sections are organized such that the first group
+pertains to the size and internal structure of nodes, the next group to
+compression specific to B-trees, and the last group to management of
+free space. Most of the techniques in the individual sub-sections are
+independent of others, although certain combinations may ease their
+implementation. For example, prefix- and suffix-truncation require
+detailed and perhaps excessive record keeping unless key values are
+normalized into binary strings.

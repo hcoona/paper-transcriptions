@@ -1,0 +1,180 @@
+\hypertarget{introduction}{%
+\chapter{Introduction}\label{introduction}}
+
+Less than 10 years after Bayer and McCreight {[}7{]} introduced B-trees,
+and now more than a quarter century ago, Comer called B-tree indexes
+ubiquitous {[}27{]}. Gray and Reuter asserted that ``B-trees are by far
+the most important access path structure in database and file systems''
+{[}59{]}. B-trees in various forms and variants are used in databases,
+information retrieval, and file systems. It could be said that the
+world's information is at our fingertips because of B-trees.
+
+\hypertarget{perspectives-on-b-trees}{%
+\section{Perspectives on B-trees}\label{perspectives-on-b-trees}}
+
+Figure 1.1 shows a very simple B-tree with a root node and four leaf
+nodes. Individual records and keys within the nodes are not shown. The
+leaf nodes contain records with keys in disjoint key ranges. The root
+node contains pointers to the leaf nodes and separator keys that divide
+the key ranges in the leaves. If the number of leaf nodes exceeds the
+number of pointers and separator keys that fit in the root node, an
+intermediate layer of ``branch'' nodes is introduced. The separator keys
+in the root node divide key ranges covered by the branch nodes (also
+known as internal, intermediate, or interior nodes), and separator keys
+in the branch nodes divide key ranges in the leaves. For very large data
+collections, B-trees with multiple layers of branch nodes are used. One
+or two branch levels are common in B-trees used as database indexes.
+
+Fig. 1.1 A simple B-tree with root node and four leaf nodes.
+
+Complementing this ``data structures perspective'' on B-trees is the
+following ``algorithms perspective.'' Binary search in a sorted array
+permits efficient search with robust performance characteristics. For
+example, a search among 10\textsuperscript{9} or 2\textsuperscript{30}
+items can be accomplished with only 30 comparisons. If the array of data
+items is larger than memory, however, some form of paging is required,
+typically relying on virtual memory or on a buffer pool. It is fairly
+inefficient with respect to I/O, however, because for all but the last
+few comparisons, entire pages containing tens or hundreds of keys are
+fetched but only a single key is inspected. Thus, a cache might be
+introduced that contains the keys most frequently used during binary
+searches in the large array. These are the median key in the sorted
+array, the median of each resulting half array, the median of each
+resulting quarter array, etc., until the cache reaches the size of a
+page. In effect, the root of a B-tree is this cache, with some
+flexibility added in order to enable array sizes that are not powers of
+two as well as efficient insertions and deletions. If the keys in the
+root page cannot divide the original large array into sub-arrays smaller
+than a single page, keys of each sub-array are cached, forming branch
+levels between the root page and page-sized sub-arrays.
+
+B-tree indexes perform very well for a wide variety of operations that
+are required in information retrieval and database management, even if
+some other index structure is faster for some individual index
+operations. Perhaps the ``B'' in their name ``B-trees'' should stand for
+their balanced performance across queries, updates, and utilities.
+Queries include exact-match queries (``='' and ``in'' predicates), range
+queries (``\emph{\textless{}}'' and ``between'' predicates), and full
+scans, with sorted output if required. Updates include insertion,
+deletion, modifications of existing data associated with a specific key
+value, and ``bulk'' variants of those operations, for example bulk
+loading new information and purging out-of-date records. Utilities
+include creation and removal of entire indexes, defragmentation, and
+consistency checks. For all of those operations, including incremental
+and online variants of the utilities, B-trees also enable efficient
+concurrency control and recovery.
+
+\hypertarget{purpose-and-scope}{%
+\section{Purpose and Scope}\label{purpose-and-scope}}
+
+Many students, researchers, and professionals know the basic facts about
+B-tree indexes. Basic knowledge includes their organization in nodes
+including one root and many leaves, the uniform distance between root
+and leaves, their logarithmic height and logarithmic search effort, and
+their efficiency during insertions and deletions. This survey briefly
+reviews the basics of B-tree indexes but assumes that the reader is
+interested in more detailed and more complete information about modern
+B-tree techniques.
+
+Commonly held knowledge often falls short when it comes to deeper topics
+such as concurrency control and recovery or to practical topics such as
+incremental bulk loading and structural consistency checking. The same
+is true about the many ways in which B-trees assist in query processing,
+e.g., in relational databases. The goal here is to make such knowledge
+readily available as a survey and as a reference for the advanced
+student or professional.
+
+The present survey goes beyond the ``classic'' B-tree references {[}7,
+8, 27, 59{]} in multiple ways. First, more recent techniques are
+covered, both research ideas and proven implementation techniques.
+Whereas the first twenty years of B-tree improvements are covered in
+those references, the last twenty years are not. Second, in addition to
+core data structure and algorithms, the present survey also discusses
+their usage, for example in query processing and in efficient update
+plans. Finally, auxiliary algorithms are covered, for example
+defragmentation and consistency checks.
+
+During the time since their invention, the basic design of B-trees has
+been improved upon in many ways. These improvements pertain to
+additional levels in the memory hierarchy such as CPU caches, to
+multi-dimensional data and multi-dimensional queries, to concurrency
+control techniques such as multi-level locking and key range locking, to
+utilities such as online index creation, and to many more aspects of
+B-trees. Another goal here is to gather many of these improvements and
+techniques in a single document.
+
+The focus and primary context of this survey are B-tree indexes in
+database management systems, primarily in relational databases. This is
+reflected in many specific explanations, examples, and arguments.
+Nonetheless, many of the techniques are readily applicable or at least
+transferable to other possible application domains of B-trees, in
+particular to information retrieval {[}83{]}, file systems {[}71{]}, and
+``No SQL'' databases and key-value stores recently popularized for web
+services and cloud computing {[}21, 29{]}.
+
+A survey of techniques cannot provide a comprehensive performance
+evaluation or immediate implementation guidance. The reader still must
+choose what techniques are required or appropriate for specific
+environments and requirements. Issues to consider include the expected
+data size and workload, the anticipated hardware and its memory
+hierarchy, expected reliability requirements, degree of parallelism and
+needs for concurrency control, the supported data model and query
+patterns, etc.
+
+\hypertarget{new-hardware}{%
+\section{New Hardware}\label{new-hardware}}
+
+Flash memory, flash devices, and other solid state storage technology
+are about to change the memory hierarchy in computer systems in general
+and in data management in particular. For example, most current software
+assumes two levels in the memory hierarchy, namely RAM and disk, whereas
+any further levels such as CPU caches and disk caches are hidden by
+hardware and its embedded control software. Flash memory might also
+remain hidden, perhaps as large and fast virtual memory or as fast disk
+storage. The more likely design for databases, however, seems to be
+explicit modeling of a memory hierarchy with three or even more levels.
+Not only algorithms such as external merge sort but also storage
+structures such as B-tree indexes will need a re-design and perhaps a
+re-implementation.
+
+Among other effects, flash devices with their very fast access latency
+are about to change database query processing. They likely will shift
+the break-even point toward query execution plans based on
+index-to-index navigation, away from large scans and large set
+operations such as sort and hash join. With more index-to-index
+navigation, tuning the set of indexes including automatic incremental
+index creation, growth, optimization, etc. will come more into focus in
+future database engines.
+
+As much as solid state storage will change tradeoffs and optimizations
+for data structures and access algorithms, many-core processors will
+change tradeoffs and optimizations for concurrency control and recovery.
+High degrees of concurrency can be enabled only by appropriate
+definitions of consistent states and of transaction boundaries, and
+recovery techniques for individual transactions and for the system state
+must support them. These consistent intermediate states must be defined
+for each kind of index and data structure, and B-trees will likely be
+first index structure for which such techniques are implemented in
+production-ready database systems, file systems, and key-value stores.
+
+In spite of future changes for databases and indexes on flash devices
+and other solid state storage technology, the present survey often
+mentions tradeoffs or design choices appropriate for traditional disk
+drives, because much of the presently known and implemented techniques
+have been invented and designed in this context. The goal is to provide
+comprehensive background knowledge about B-trees for those researching
+and implementing techniques appropriate for the new types of storage.
+
+\hypertarget{overview}{%
+\section{Overview}\label{overview}}
+
+The next section (Section 2) sets out the basics as they may be found in
+a college level text book. The following sections cover implementation
+techniques for mature database management products. Their topics are
+implementation techniques for data structures and algorithms (Section
+3), transactional techniques (Section 4), query processing using B-trees
+(Section 5), utility operations specific to B-tree indexes (Section 6),
+and B-trees with advanced key structures (Section 7). These sections
+might be more suitable for an advanced course on data management
+implementation techniques and for a professional developer desiring
+in-depth knowledge about B-tree indexes.
