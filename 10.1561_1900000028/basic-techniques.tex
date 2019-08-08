@@ -12,7 +12,7 @@ B-tree creation eschews random ``insert'' operations and instead pays
 the cost of an initial sort for the benefit of efficient ``append''
 operations.
 
-Figure 2.1 illustrates how a B-tree index can preserve or cache the sort
+\autoref{fig-2-1} illustrates how a B-tree index can preserve or cache the sort
 effort. With the output of a sort operation, the B-tree with root, leaf
 nodes, etc. can be created very efficiently. A subsequent scan can
 retrieve data sorted without additional sort effort. In addition to
@@ -20,7 +20,12 @@ preserving the sort effort over an arbitrary length of time, B-trees
 also permit efficient insertions and deletions, retaining their native
 sort order and enabling efficient scans in sorted order at any time.
 
-Fig. 2.1 Caching the sort effort in a B-tree.
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-2-1.png}
+
+  \caption{Caching the sort effort in a B-tree.\label{fig-2-1}}
+\end{figure}
 
 Ordered retrieval aids many database operations, in particular
 subsequent join and grouping operations. This is true if the list of
@@ -47,17 +52,24 @@ B-trees are more similar to 2-3-trees, in particular as both data
 structures have a variable number of keys and child pointers in a node.
 In fact, B-trees can be seen as a generalization of 2-3-trees. Some
 books treat them both as special cases of ($a,b$)-trees with
-$a \geq 2$ and $b \geq 2a − 1$ {[}92{]}. The number of child
+$a \geq 2$ and $b \geq 2a - 1$ {[}92{]}. The number of child
 pointers in a canonical B-tree node varies between $N$ and
-$2N − 1$. For a small page size and a particularly large key size,
+$2N - 1$. For a small page size and a particularly large key size,
 this might indeed be the range between $2$ and $3$. The representation of a
 single node in a 2-3-tree by linking two binary nodes also has a
 parallel in B-trees, discussed later as B\textsuperscript{link}-trees.
 
-Figure 2.2 shows a ternary node in a 2-3-tree represented by two binary
+\autoref{fig-2-2} shows a ternary node in a 2-3-tree represented by two binary
 nodes, one pointing to the other half of the ternary node rather than a
 child. There is only one pointer to this ternary node from a parent
 node, and the node has three child pointers.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.3\columnwidth]{./media/fig-2-2.png}
+
+  \caption{A ternary node in a 2-3-tree represented with binary nodes.\label{fig-2-2}}
+\end{figure}
 
 In a perfectly balanced tree such as a B-tree, it makes sense to count
 the levels of nodes not from the root but from the leaves. Thus, leaves
@@ -73,8 +85,6 @@ adjoining key ranges are called neighbors, because there is no commonly
 used term for such siblings in families. The two neighbor nodes are
 called left and right neighbors; their key ranges are called the
 adjacent lower and upper key ranges.
-
-Fig. 2.2 A ternary node in a 2-3-tree represented with binary nodes.
 
 In most relational database management systems, the B-tree code is part
 of the access methods module within the storage layer, which also
@@ -148,22 +158,27 @@ columns, or it can be anything else. In most parts of this survey, the
 nature, contents, and semantics of this information are not important
 and not discussed further.
 
-Fig. 2.3 B-tree with root, branch nodes, and leaves.
-
 In both branch nodes and leaves, the entries are kept in sorted order.
 The purpose is to enable fast search within each node, typically using
 binary search. A branch node with $N$ separator keys contains
-$N$ + 1 child pointers, one for each key range between neighboring
+$N + 1$ child pointers, one for each key range between neighboring
 separator keys, one for the key, range below the smallest separator key,
 and one for the key range above the largest separator key.
 
-Figure 2.3 illustrates a B-tree more complex than the one in Figure 1.1,
+\autoref{fig-2-3} illustrates a B-tree more complex than the one in \autoref{fig-1-1},
 including one level of branch nodes between the leaves and the root. In
 the diagram, the root and all branch nodes have fan-outs of 2 or 3. In a
 B-tree index stored on disk, the fan-out is determined by the sizes of
 disk pages, child pointers, and separator keys. Keys are omitted in
-Figure 2.3 and in many of the following figures unless they are required
+\autoref{fig-2-3} and in many of the following figures unless they are required
 for the discussion at hand.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-2-3.png}
+
+  \caption{B-tree with root, branch nodes, and leaves.\label{fig-2-3}}
+\end{figure}
 
 Among all possible node-to-node pointers, only the child pointers are
 truly required. Many implementations also maintain neighbor pointers,
@@ -221,25 +236,25 @@ If a B-tree contains $N$ records and $L$ records per leaf, the
 B-tree requires $N/L$ leaf nodes. If the average number of children
 per parent is $F$, the number of branch levels is
 $\log_F(N/L)$. For example, the B-tree in
-Figure 2.3 has 9 leaf nodes, a fan-out $F = 3$, and thus
+\autoref{fig-2-3} has $9$ leaf nodes, a fan-out $F = 3$, and thus
 $\log_3 9 = 2$ branch levels. Depending on the convention,
 the height of this B-tree is $2$ (levels above the leaves) or $3$ (levels
 including the leaves). In order to reflect the fact that the root node
 usually has a different fan-out, this expression is rounded up. In fact,
 after some random insertions and deletions, space utilization in the
 nodes will vary among nodes. The average space utilization in B-trees is
-usually given as about 70\% {[}75{]}, but various policies used in
+usually given as about $70\%$ {[}75{]}, but various policies used in
 practice and discussed later may result in higher space utilization. Our
 goal here is not to be precise but to show crucial effects, basic
 calculations, and the orders of magnitude of various choices and
 parameters.
 
 If a single branch node can point to hundreds of children, then the
-distance between root and leaves is usually very small and 99\% or more
+distance between root and leaves is usually very small and $99\%$ or more
 of all B-tree nodes are leaves. In other words, great-grandparents and
 even more distant ancestors are rare in practice. Thus, for the
 performance of random searches based on root-to-leaf B-tree traversals,
-treatment of only 1\% of a B-tree index and thus perhaps only 1\% of a
+treatment of only $1\%$ of a B-tree index and thus perhaps only $1\%$ of a
 database determine much of the performance. For example, keeping the
 root of a frequently used B-tree index in memory benefits many searches
 with little cost in memory or cache space.
@@ -288,23 +303,28 @@ and record size may produce secondary rounding effects in this
 calculation but the record count is the only primary influence on the
 number of comparisons in a root-to-leaf search in a B-tree.
 
-Figure 2.4 shows parts of a B-tree including some key values. A search
+\autoref{fig-2-4} shows parts of a B-tree including some key values. A search
 for the value 31 starts at the root. The pointer between the key values
 7 and 89 is followed to the appropriate branch node. As the search key
 is larger than all keys in that node, the right-most pointer is followed
 to a leaf. A search within that node determines that the key value 31
 does not exist in the B-tree. A search for key value 23 would lead to
-the center node in Figure 2.4, assuming a convention that a separator
+the center node in \autoref{fig-2-4}, assuming a convention that a separator
 key serves as inclusive upper bound for a key range. The search cannot
 terminate when the value 23 is found at the branch level. This is
 because the purpose of most B-tree searches is retrieving the
 information attached to each key and information contents exists only in
 leaves in most B-tree implementations. Moreover, as can be seen for key
-value 15 in Figure 2.4, a key that might have existed at some time in a
+value 15 in \autoref{fig-2-4}, a key that might have existed at some time in a
 valid leaf entry may continue to serve as separator key in a nonleaf
 node even after the leaf entry has been removed.
 
-Fig. 2.4 B-tree with root-to-leaf search.
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-2-4.png}
+
+  \caption{B-tree with root-to-leaf search.\label{fig-2-4}}
+\end{figure}
 
 An exact-match query is complete after the search, but a range query
 must scan leaf nodes from the low end of the range to the high end. The
@@ -335,14 +355,19 @@ newly allocated nodes. This is a valuable technique if modifying the
 page identifier of the root node in the database catalogs is expensive
 or if the page identifier is cached in compiled query execution plans.
 
-Figure 2.5 shows the B-tree of Figure 2.4 after insertion of the key 22
+\autoref{fig-2-5} shows the B-tree of \autoref{fig-2-4} after insertion of the key 22
 and a resulting leaf split. Note that the separator key propagated to
 the parent node can be chosen freely; any key value that separates the
 two nodes resulting from the split is acceptable. This is particularly
 useful for variable-length keys: the shortest possible separator key can
 be employed in order to reduce space requirements in the parent node.
 
-Fig. 2.5 B-tree with insertion and leaf split.
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-2-5.png}
+
+  \caption{B-tree with insertion and leaf split.\label{fig-2-5}}
+\end{figure}
 
 Some implementations of B-trees delay splits as much as possible, for
 example by load balancing among siblings such that a full node can make
@@ -364,7 +389,7 @@ shrinks at the root. If the page identifier of the root node is cached
 as mentioned earlier, it might be practical to move all contents to the
 root node and de-allocate the two children of the root node.
 
-Figure 2.6 shows the B-tree from Figure 2.5 after deletion of key value
+\autoref{fig-2-6} shows the B-tree from \autoref{fig-2-5} after deletion of key value
 23. Due to underflow, two leaves were merged. Note that the separator
 key 23 was not removed because it still serves the required function.
 
@@ -372,12 +397,17 @@ Many implementations, however, avoid the complexities of load balancing
 and of merging and simply let underflows persist. A subsequent insertion
 or defragmentation will presumably resolve it later. A recent study of
 worst case and average case behaviors of B-trees concludes that ``adding
-periodic rebuilding of the tree,... the data structure... is
+periodic rebuilding of the tree,\ldots the data structure\ldots is
 theoretically superior to standard B\textsuperscript{+}-trees in many
-ways {[}and{]}... rebalancing on deletion can be considered harmful''
+ways {[}and{]}\ldots rebalancing on deletion can be considered harmful''
 {[}116{]}.
 
-Fig. 2.6 Deletion with load balancing.
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-2-6.png}
+
+  \caption{Deletion with load balancing.\label{fig-2-6}}
+\end{figure}
 
 Updates of key fields in B-tree records often require deletion in one
 place and insertion in another place in the B-tree. Updates of nonkey
@@ -468,13 +498,20 @@ In the former case, all future accesses incur additional overhead,
 possibly the cost of a disk read; in the latter case, a seemingly simple
 change may incur a substantial unforeseen and unpredictable cost.
 
-Figure 2.7 shows records (solid lines) and pages (dashed lines) within a
+\autoref{fig-2-7} shows records (solid lines) and pages (dashed lines) within a
 heap file. Records are of variable size. Modifications of two records
 have changed their sizes and forced moving the record contents to
 another page with forwarding pointers (dotted lines) left behind in the
 original locations. If an index points to records in this file,
 forwarding does not affect the index contents but does affect the access
 times in subsequent queries.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-2-7.png}
+
+  \caption{Heap file with variable-length records and forwarding pointers.\label{fig-2-7}}
+\end{figure}
 
 If a B-tree structure rather than a heap is employed to store all
 columns in a table, it is called a primary index here. Other commonly
@@ -486,18 +523,10 @@ identifier including a page identifier. The term ``reference'' will
 often be used below to refer to either one. References to records in a
 primary index are also called bookmarks in some contexts.
 
-\begin{quote}
-\includegraphics[width=2.37667in,height=0.49in]{./media/image1.png}
-\end{quote}
-
-Fig. 2.7 Heap file with variable-length records and forwarding pointers.
-
-Fig. 2.8 Index navigation with a search key.
-
 Both designs, reference by search key and reference by record
 identifier, have advantages and disadvantages {[}68{]}; there is no
 perfect design. The former design requires a root-to-leaf search in the
-primary index after each search in the secondary index. Figure 2.8
+primary index after each search in the secondary index. \autoref{fig-2-8}
 illustrates the double index search when the primary data structure for
 a table is a primary index and references in secondary indexes use
 search keys in the primary index. The search key extracted from the
@@ -506,6 +535,13 @@ secondary index. The information associated with a key in the secondary
 index is a search key for the primary index. Thus, after a successful
 search in the secondary index, another B-tree search is required in the
 primary index including a root-to-leaf traversal there.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-2-8.png}
+
+  \caption{Index navigation with a search key.\label{fig-2-8}}
+\end{figure}
 
 The latter design permits faster access to records in the primary index
 after a search in the secondary index. When a leaf in the primary index
@@ -643,17 +679,17 @@ sections.
 With respect to I/O savings, it turns out that fairly simple
 implementation techniques can render B-tree indexes competitive with
 hash indexes in this regard. Most B-trees have a fan-out of 100s or
-1,000s. For example, for node of 8 KB and records of 20 bytes, 70\%
+1,000s. For example, for node of 8 KB and records of 20 bytes, $70\%$
 utilization means 140 child nodes per parent node. For larger node sizes
 (say 64 KB), good defragmentation (enabling run-length encoding of child
 pointers, say 2 bytes on average), key compression using prefix and
-suffix truncation (say 4 bytes on average per entry), 70\% utilization
+suffix truncation (say 4 bytes on average per entry), $70\%$ utilization
 means 5,600 child nodes per parent node. Thus, root-to-leaf paths are
-short and more than 99\% or even 99.9\% of pages in a B-tree are leaf
+short and more than $99\%$ or even $99.9\%$ of pages in a B-tree are leaf
 nodes. These considerations must be combined with the traditional rule
 that many database servers run with memory size equal to 1--3\% of
 storage size. Today and in the future, the percentage might be higher,
-up to 100\% for in-memory databases. In other words, for any B-tree
+up to $100\%$ for in-memory databases. In other words, for any B-tree
 index that is ``warm'' in the buffer pool, all branch nodes will be
 present in the buffer pool. Thus, each B-tree search only requires a
 single I/O, the leaf page. Moreover, the branch nodes could be fetched
@@ -664,12 +700,19 @@ separate array such that interpolation search is most effective,
 replacing or augmenting child pointers in form of page identifiers with
 child pointers in form of memory pointers, etc.
 
-Figure 2.9 illustrates the argument. All B-tree levels but the leaf
+\autoref{fig-2-9} illustrates the argument. All B-tree levels but the leaf
 nodes easily fit into the buffer pool in RAM memory. For leaf pages, a
 buffer pool might employ the least-recently-used (LRU) replacement
 policy. Thus, for searches with random search keys, only a single I/O
 operation is required, similar to a hash index if one is available in a
 database system.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-2-9.png}
+
+  \caption{B-tree levels and buffering.\label{fig-2-9}}
+\end{figure}
 
 With respect to CPU savings, B-tree indexes can compete with hash
 indexes using a few simple implementation techniques. B-tree indexes
@@ -682,8 +725,6 @@ discuss normalized keys, poor man's normalized keys, and caching poor
 man's normalized keys in the ``indirection vector'' that is required for
 variable-size records. In sum, poor man's normalized keys and the
 indirection vector can behave similarly to hash values and hash buckets.
-
-Fig. 2.9 B-tree levels and buffering.
 
 B-trees also permit direct address calculation. Specifically,
 interpolation search may guide the search faster than binary search. A

@@ -12,7 +12,7 @@ world's information is at our fingertips because of B-trees.
 \hypertarget{perspectives-on-b-trees}{%
 \section{Perspectives on B-trees}\label{perspectives-on-b-trees}}
 
-Figure 1.1 shows a very simple B-tree with a root node and four leaf
+\autoref{fig-1-1} shows a very simple B-tree with a root node and four leaf
 nodes. Individual records and keys within the nodes are not shown. The
 leaf nodes contain records with keys in disjoint key ranges. The root
 node contains pointers to the leaf nodes and separator keys that divide
@@ -25,13 +25,18 @@ in the branch nodes divide key ranges in the leaves. For very large data
 collections, B-trees with multiple layers of branch nodes are used. One
 or two branch levels are common in B-trees used as database indexes.
 
-Fig. 1.1 A simple B-tree with root node and four leaf nodes.
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-1-1.png}
+
+  \caption{A simple B-tree with root node and four leaf nodes.\label{fig-1-1}}
+\end{figure}
 
 Complementing this ``data structures perspective'' on B-trees is the
 following ``algorithms perspective.'' Binary search in a sorted array
 permits efficient search with robust performance characteristics. For
-example, a search among 10\textsuperscript{9} or 2\textsuperscript{30}
-items can be accomplished with only 30 comparisons. If the array of data
+example, a search among $10^9$ or $2^30$
+items can be accomplished with only $30$ comparisons. If the array of data
 items is larger than memory, however, some form of paging is required,
 typically relying on virtual memory or on a buffer pool. It is fairly
 inefficient with respect to I/O, however, because for all but the last
@@ -54,7 +59,7 @@ some other index structure is faster for some individual index
 operations. Perhaps the ``B'' in their name ``B-trees'' should stand for
 their balanced performance across queries, updates, and utilities.
 Queries include exact-match queries (``='' and ``in'' predicates), range
-queries (``\emph{\textless{}}'' and ``between'' predicates), and full
+queries (``\textless{}'' and ``between'' predicates), and full
 scans, with sorted output if required. Updates include insertion,
 deletion, modifications of existing data associated with a specific key
 value, and ``bulk'' variants of those operations, for example bulk
@@ -143,7 +148,7 @@ the break-even point toward query execution plans based on
 index-to-index navigation, away from large scans and large set
 operations such as sort and hash join. With more index-to-index
 navigation, tuning the set of indexes including automatic incremental
-index creation, growth, optimization, etc. will come more into focus in
+index creation, growth, optimization, etc., will come more into focus in
 future database engines.
 
 As much as solid state storage will change tradeoffs and optimizations

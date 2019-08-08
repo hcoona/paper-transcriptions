@@ -50,12 +50,12 @@ bottleneck, binary search is used within nodes, and a fixed total number
 of comparisons in a root-to-leaf B-tree search independent of the node
 size as discussed above.
 
-Figure 3.1 shows a calculation similar to those in {[}57{]}. It assumes
-pages filled to 70\% with records of 20 bytes, typical in secondary
+\autoref{fig-3-1} shows a calculation similar to those in {[}57{]}. It assumes
+pages filled to $70\%$ with records of 20 bytes, typical in secondary
 indexes. For example, in a page of 4 KB holding 143 records, binary
 search performs a little over 7 comparisons on average. The number of
 comparisons is termed the utility of the node with respect to searching
-the index. I/O times in Figure 3.1 are calculated assuming 5 ms access
+the index. I/O times in \autoref{fig-3-1} are calculated assuming 5 ms access
 time and 200 MB/s (burst) transfer bandwidth. The heuristic above would
 suggest a page size of 5 ms × 200 MB/s = 1,000 KB. B-tree nodes of 128
 KB enable the most comparisons (in binary search) relative to the disk
@@ -67,7 +67,21 @@ achieve 100 times faster access times without substantially different
 transfer bandwidth. Optimal B-tree node sizes will be much smaller,
 e.g., 2 KB {[}50{]}.
 
-Fig. 3.1 Utility for pages sizes one a traditional disk.
+\begin{figure}
+  \centering
+  \begin{tabular}{rrrrr}
+    \centeringcell{Page size} & \centeringcell{Records} & \centeringcell{Node} & \centeringcell{I/O time} & \centeringcell{Utility} \\
+    \centeringcell{{[}KB{]}} & \centeringcell{/ page} & \centeringcell{utility} & \centeringcell{{[}ms{]}} & \centeringcell{/ time} \\
+    4 & 143 & 7.163 & 5.020 & 1.427 \\
+    16 & 573 & 9.163 & 5.080 & 1.804 \\
+    64 & 2,294 & 11.163 & 5.320 & 2.098 \\
+    128 & 4,588 & 12.163 & 5.640 & 2.157 \\
+    256 & 9,175 & 13.163 & 6.280 & 2.096 \\
+    1,024 & 36,700 & 15.163 & 10.120 & 1.498 \\
+    4,096 & 146,801 & 17.163 & 25.480 & 0.674 \\
+  \end{tabular}
+  \caption{Utility for pages sizes one a traditional disk.\label{fig-3-1}}
+\end{figure}
 
 \begin{itemize}
 \item
@@ -121,15 +135,15 @@ steps toward interpolation or binary search. Sums and counts required to
 quickly derive regression and correlation coefficients can easily be
 maintained incrementally during updates of individual records in a page.
 
-Figure 3.2 shows two B-tree nodes and their key values. In the upper
+\autoref{fig-3-2} shows two B-tree nodes and their key values. In the upper
 one, the correlation between slot numbers and key values is very high
-($> 0.998$). Slope and intercept are 3.1 and 5.9,
+($> 0.998$). Slope and intercept are $3.1$ and $5.9$,
 respectively (slot numbers start with 0). An interpolation search for
 key value 12 immediately probes slot number $(12 − 5.9) \div
 3.1 = 2$ (rounded), which is where key value 12 indeed can be
 found. In other words, if the correlation between position and key value
 is very strong, interpolation search is promising. In the lower B-tree
-node shown in Figure 3.2, slope and intercept are −64 and 31,
+node shown in \autoref{fig-3-2}, slope and intercept are −64 and 31,
 respectively. More importantly, the correlation coefficient is much
 lower ($< 0.75$). Not surprisingly, interpolation search
 for key value 97 starts probing at slot $(97 − 64) \div 31 = 5$ whereas the
@@ -137,13 +151,19 @@ correct slot number of key value 97 is 8. Thus, if the correlation
 between position and key value is weak, binary search is the more
 promising approach.
 
-\begin{quote}
-5, 9, 12, 16, 19, 21, 25, 27, 31, 34, 36
-
-5, 6, 15, 15, 16, 43, 95, 96, 97, 128, 499
-\end{quote}
-
-Fig. 3.2 Sample key values.
+\begin{figure}
+  \centering
+  \begin{tabular}{l}
+    \hline
+    \multicolumn{1}{|l|}{5, 9, 12, 16, 19, 21, 25, 27, 31, 34, 36} \\
+    \hline\\
+    \\
+    \hline
+    \multicolumn{1}{|l|}{5, 6, 15, 15, 16, 43, 95, 96, 97, 128, 499} \\
+    \hline
+  \end{tabular}
+  \caption{Sample key values.\label{fig-3-2}}
+\end{figure}
 
 \begin{itemize}
 \item
@@ -171,10 +191,10 @@ known as slot array) with entries of fixed size. Each entry represents
 one record. An entry must contain the byte offset of the record and may
 contain additional information, e.g., the size of the record.
 
-Figure 3.3 shows the most important parts of a disk page in a database.
+\autoref{fig-3-3} shows the most important parts of a disk page in a database.
 The page header, shown far left within the page, contains index
 identifier, B-tree level (for consistency checks), record count, etc.
-This is followed in Figure 3.3 by the indirection vector. In heap files,
+This is followed in \autoref{fig-3-3} by the indirection vector. In heap files,
 slots remain unused after a record deletion in order to ensure that the
 remaining valid records retain their record identifier. In B-trees,
 insertions or deletions require shifting some slot entries in order to
@@ -187,17 +207,17 @@ records grows from right to left. The opposite design is also possible.
 Letting two data structures grow toward each other enables equally well
 many small records or fewer large records.
 
-\begin{quote}
-\includegraphics[width=2.60667in,height=0.32in]{./media/image1.png}
-\end{quote}
-
-Fig. 3.3 A database page with page header, indirection vector, and
-variable-length records.
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/image1.png}
+  \caption{A database page with page header, indirection vector, and
+  variable-length records.\label{fig-3-3}}
+\end{figure}
 
 For efficient binary search, the entries in the indirection vector are
 sorted on their search key. It is not required that the entries be
 sorted on their offsets, i.e., the placement of records. For example,
-the sequence of slots in the left half of Figure 3.3 differs from the
+the sequence of slots in the left half of \autoref{fig-3-3} differs from the
 sequence of records in the right half. A sort order on offsets is needed
 only temporarily for consistency checks and for compaction or free space
 consolidation, which may be invoked by a record insertion, by a
@@ -248,15 +268,15 @@ Singleton {[}118{]} without citation, presumably because it seemed a
 well-known or trivial concept: ``integer comparisons were used to order
 normalized floating-point numbers.''
 
-Figure 3.4 illustrates the idea based on an integer column followed by
+\autoref{fig-3-4} illustrates the idea based on an integer column followed by
 two string columns. The initial single bit (shown underlined) indicates
 whether the leading key column contains a valid value. Using 0 for null
 values and 1 for other values ensures that a null value ``sorts lower''
 than all other values. If the integer column value is not null, it is
 stored in the next 32 bits. Signed integers require reversing some bits
 to ensure the proper sort order, just like floating point values require
-proper treatment of exponent, mantissa, and the two sign bits. Figure
-3.4 assumes that the first column is unsigned. The following single bit
+proper treatment of exponent, mantissa, and the two sign bits. \autoref{fig-3-4}
+assumes that the first column is unsigned. The following single bit
 (also shown underlined) indicates whether the first string column
 contains a valid value. This value is shown here as text but really
 ought to be stored in a binary format as appropriate for the desired
@@ -270,7 +290,17 @@ must offer one more symbol than the alphabet contains. Notice the
 difference in representations between a missing value in a string column
 (in the third row) and an empty string (in the fourth row).
 
-Fig. 3.4 Normalized keys.
+\begin{figure}
+  \centering
+  \begin{tabular}{llll}
+Integer & First string & Second string & Normalized key \\
+2 & ``flow'' & ``error'' & \underline{1} 0…0 0000 0000 0010 \underline{1} flow\textbackslash{}0 \underline{1} error\textbackslash{}0 \\
+3 & ``flower'' & ``rare'' & \underline{1} 0…0 0000 0000 0011 \underline{1} flower\textbackslash{}0 \underline{1} rare\textbackslash{}0 \\
+1024 & Null & ``brush'' & \underline{1} 0…0 0100 0000 0000 \underline{0} \underline{1} brush\textbackslash{}0 \\
+Null & ``'' & Null & \underline{0} \underline{1} \textbackslash{}0 \underline{0}
+  \end{tabular}
+  \caption{Normalized keys.\autoref{fig-3-4}}
+\end{figure}
 
 For some collation sequences, ``normalized keys'' lose information. A
 typical example is a language with lower and upper case letters sorted
@@ -338,7 +368,7 @@ Saving storage space permits increasing the number of records per leaf
 and increasing the fan-out of branch nodes. In addition, the truncated
 key bytes do not need to be considered in comparisons during a search.
 
-Figure 3.5 shows the same records within a B-tree node represented
+\autoref{fig-3-5} shows the same records within a B-tree node represented
 without and with prefix truncation. It is immediately obvious that the
 latter representation is more efficient. It is possible to combine
 prefix truncation with some additional compression technique, e.g., to
@@ -346,7 +376,12 @@ eliminate symbols from the birthdates given. Of course, it is always
 required to weigh gains in run-time performance and storage efficiency
 against implementation complexity including testing effort.
 
-Fig. 3.5 A B-tree node without and with prefix truncation.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.6\columnwidth]{./media/fig-3-5.png}
+
+  \caption{A B-tree node without and with prefix truncation.\label{fig-3-5}}
+\end{figure}
 
 Prefix truncation can be applied to entire nodes or to some subset of
 the keys within a node. Code simplicity argues for truncating the same
@@ -411,7 +446,7 @@ truncation can be exploited without adding comparison steps to a
 root-to-leaf search in a B-tree.
 
 For example, assume a binary search within the B-tree node shown on the
-left side of Figure 3.5, with the remaining search interval from
+left side of \autoref{fig-3-5}, with the remaining search interval from
 ``Smith, Jack'' to ``Smith, Jason.'' Thus, the search argument must be
 in that range and also start with ``Smith, Ja.'' For all remaining
 comparisons, this prefix may be assumed and thus skipped in all
@@ -429,21 +464,26 @@ required. Rather than taking the highest key from the left neighbor or
 the lowest key from the right neighbor, the separator is chosen as the
 shortest string that separates those two keys in the leaves.
 
-For example, assume the key values shown in Figure 3.6 are in the middle
+For example, assume the key values shown in \autoref{fig-3-6} are in the middle
 of a node that needs to be split. The precise center is near the long
 arrow. The minimal key splitting the node there requires at least 9
 letters, including the first letter of the given name. If, on the other
 hand, a split point anywhere between the short arrows is acceptable, a
 single letter suffices. A single comparison of the two keys defining the
 range of acceptable split points can determine the shortest possible
-separator key. For example, in Figure 3.6, a comparison between
+separator key. For example, in \autoref{fig-3-6}, a comparison between
 ``Johnson, Lucy'' and ``Smith, Eric'' shows their first difference in
 the first letter, indicating that a separator key with a single letter
 suffices. Any letter can be chosen that is larger than J and not larger
 than S. It is not required that the letter actually occurs in the
 current key values.
 
-Fig. 3.6 Finding a separator key during a leaf split.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.3\columnwidth]{./media/fig-3-6.png}
+
+  \caption{Finding a separator key during a leaf split.\label{fig-3-6}}
+\end{figure}
 
 It is tempting to apply suffix truncation not only when splitting leaf
 nodes but also when splitting branch nodes. The problem with this idea,
@@ -458,7 +498,7 @@ nodes. Thus, this problematic idea, even if it worked flawlessly, would
 probably never have a substantial effect on B-tree size or search
 performance.
 
-Figure 3.7 illustrates the problem. The set of separator keys in the
+\autoref{fig-3-7} illustrates the problem. The set of separator keys in the
 upper B-tree is split by the shortened key ``g,'' but the set of leaf
 entries is not. Thus, a root-to-leaf search for the key ``gh'' will be
 guided to the right sub-tree and thus fail, obviously incorrectly. The
@@ -466,6 +506,13 @@ correct solution is to guide searches based on the original separator
 key ``gp.'' In other words, when the branch node is split, no further
 suffix truncation must be applied. The only choice when splitting a
 branch node is the split point and the key found there.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-3-7.png}
+
+  \caption{Incorrect suffix truncation.\label{fig-3-7}}
+\end{figure}
 
 \begin{itemize}
 \item
@@ -526,12 +573,12 @@ equally beneficial in B-tree pages {[}87{]}.
 On the other hand, it is desirable to keep each element in the
 indirection vector small. While traditional designs often include the
 record size in the elements of the indirection vector as was mentioned
-in the discussion of Figure 3.3, the record length is hardly ever
+in the discussion of \autoref{fig-3-3}, the record length is hardly ever
 accessed without access to the related record. Thus, the field
 indicating the record length might as well be placed with the main
 record rather than in the indirection vector.
 
-Figure 3.8 illustrates such a B-tree page with keys indicating three
+\autoref{fig-3-8} illustrates such a B-tree page with keys indicating three
 European countries. On the left are page header and indirection vector,
 on the right are the variable-size records. The poor man's normalized
 key, indicated here by a single letter, is kept in the indirection
@@ -541,14 +588,19 @@ the poor man's normalized keys without incurring cache faults for the
 main records. A search for ``Finland,'' on the other hand, can rely on
 the poor man's normalized key for the binary search but eventually must
 access the main record for ``France.'' While the poor man's normalized
-key in Figure 3.8 comprises only a single letter, 2 or 4 bytes seem more
+key in \autoref{fig-3-8} comprises only a single letter, 2 or 4 bytes seem more
 appropriate, depending on the page size. For example, in a small
 database page optimized for flash storage and its fast access latency, 2
 bytes might be optimal; whereas in large database pages optimized for
 traditional disks and their fast transfer bandwidth, 4 bytes might be
 optimal.
 
-Fig. 3.8 Poor man's normalized keys in the indirection vector.
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-3-8.png}
+
+  \caption{Poor man's normalized keys in the indirection vector.\label{fig-3-8}}
+\end{figure}
 
 An alternative design organizes the indirection vector not as a linear
 array but as a B-tree of cache lines. The size of each node in this
@@ -560,13 +612,16 @@ optimized for CPU caches {[}24{]}. A complementary, more theoretical
 design of cache efficient B-tree formats is even more complex but
 achieves optimal asymptotic performance independently of the sizes of
 disk page and cache line {[}11{]}. Both organizations of B-tree nodes,
-i.e., linear arrays as shown in Figure 3.8 and B-trees within B-tree
+i.e., linear arrays as shown in \autoref{fig-3-8} and B-trees within B-tree
 nodes, can benefit from ghost slots, i.e., entries with valid key values
 but marked invalid, which will be discussed shortly.
 
-• A cache fault may waste 100s of CPU cycles. B-tree pages can be
+\begin{itemize}
+  \item
+A cache fault may waste 100s of CPU cycles. B-tree pages can be
 optimized to reduce cache faults just like B-trees are optimized
 (compared to binary trees) to reduce page faults.
+\end{itemize}
 
 \hypertarget{duplicate-key-values}{%
 \section{Duplicate Key Values}\label{duplicate-key-values}}
@@ -612,7 +667,7 @@ An alternative representation of non-unique secondary index employs
 bitmaps. There are various forms and variants. These will be discussed
 below.
 
-The rows in Figure 3.9 show alternative representations of the same
+The rows in \autoref{fig-3-9} show alternative representations of the same
 information: (a) shows individual records repeating the duplicate key
 value for each distinct record identifier associated with the key value,
 which is a simple scheme that requires the most space. Example (b) shows
@@ -633,93 +688,12 @@ the values 4711, 4712, and 4723. Bitmaps themselves are often compressed
 using some variant of run-length encoding. Without doubt, many readers
 could design additional variations and combinations.
 
-\begin{longtable}[]{@{}lllll@{}}
-\toprule
-\endhead
-Smith, 4711 & & Smith, 4712 & & Smith, 4723\tabularnewline
-\bottomrule
-\end{longtable}
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-3-9.png}
 
-\begin{quote}
-a
-\end{quote}
-
-\begin{longtable}[]{@{}l@{}}
-\toprule
-\endhead
-Smith, 4711, 4712, 4723\tabularnewline
-\bottomrule
-\end{longtable}
-
-\begin{quote}
-b
-\end{quote}
-
-\begin{longtable}[]{@{}lll@{}}
-\toprule
-\endhead
-\begin{minipage}[t]{0.30\columnwidth}\raggedright
-Smith, 4711, 4712\strut
-\end{minipage} & \begin{minipage}[t]{0.30\columnwidth}\raggedright
-\strut
-\end{minipage} & \begin{minipage}[t]{0.30\columnwidth}\raggedright
-\begin{quote}
-Smith, 4723
-\end{quote}\strut
-\end{minipage}\tabularnewline
-\bottomrule
-\end{longtable}
-
-\begin{quote}
-c
-\end{quote}
-
-\begin{longtable}[]{@{}llll@{}}
-\toprule
-\endhead
-\begin{minipage}[t]{0.22\columnwidth}\raggedright
-Smith, 4711\strut
-\end{minipage} & \begin{minipage}[t]{0.22\columnwidth}\raggedright
-\strut
-\end{minipage} & \begin{minipage}[t]{0.22\columnwidth}\raggedright
-\begin{quote}
-(9) 2
-\end{quote}\strut
-\end{minipage} & \begin{minipage}[t]{0.22\columnwidth}\raggedright
-\begin{quote}
-(8) 23
-\end{quote}\strut
-\end{minipage}\tabularnewline
-\bottomrule
-\end{longtable}
-
-\begin{quote}
-d
-\end{quote}
-
-\begin{longtable}[]{@{}l@{}}
-\toprule
-\endhead
-Smith, 4711(2), 4723\tabularnewline
-\bottomrule
-\end{longtable}
-
-\begin{quote}
-e
-\end{quote}
-
-\begin{longtable}[]{@{}l@{}}
-\toprule
-\endhead
-Smith, 4708, 00011000'00000001\tabularnewline
-\bottomrule
-\end{longtable}
-
-\begin{quote}
-f
-\end{quote}
-
-Fig. 3.9 Alternative representations of duplicates.
+  \caption{Alternative representations of duplicates.\label{fig-3-9}}
+\end{figure}
 
 Each of these schemes has its own strengths and weaknesses. For example,
 (d) seems to combine the simplicity of (a) with space efficiency
@@ -774,7 +748,7 @@ already violated.
 The term bitmap index is commonly used, but it is quite ambiguous
 without explanation of the index structure. Bitmaps can be used in
 B-trees just as well as in hash indexes and other forms of indexes. As
-seen in Figure 3.9, bitmaps are one or many representation techniques
+seen in \autoref{fig-3-9}, bitmaps are one or many representation techniques
 for a set of integers. Wherever a set of integers is associated with
 each index key, the index can be a bitmap index. In the following,
 however, a non-unique secondary B-tree index is assumed.
@@ -792,7 +766,7 @@ the domain of possible bit positions is divided into ranges. These
 ranges are numbered and a separate bitmap is created for each non-empty
 range. The search key is repeated for each segment and extended by the
 range number. An example for breaking lists into segments is shown in
-Figure 3.9, albeit with lists of references rather than with bitmaps.
+\autoref{fig-3-9}, albeit with lists of references rather than with bitmaps.
 
 A segment size with $2^15$ bit positions ensures that the
 bitmap for any segment easily fits into a database page; a segment size
@@ -815,8 +789,8 @@ bytes rather than words tend to achieve tighter compression but require
 more expensive operations {[}126{]}. This is true in particular if run
 lengths are encoded in variable-length integers.
 
-Figure 3.10 illustrates this compression technique. Example (a) shows a
-bitmap similar to the ones in Figure 3.10 although with a different
+\autoref{fig-3-10} illustrates this compression technique. Example (a) shows a
+bitmap similar to the ones in \autoref{fig-3-10} although with a different
 third value. Example (b) shows WAH compression. Commas indicate word
 boundaries in the compressed representation, underlined bit values
 indicate the word usage. The bitmap starts with 151 groups of 31 ``0''
@@ -826,47 +800,17 @@ positions. Five more groups of 31 ``0'' bits then skip forward toward
 bit position 4923, which is shown as a single ``1'' bit in the final
 literal group of 31 bits.
 
-\begin{longtable}[]{@{}lllll@{}}
-\toprule
-\endhead
-\begin{minipage}[t]{0.17\columnwidth}\raggedright
-\begin{quote}
-Smith, 4711
-\end{quote}\strut
-\end{minipage} & \begin{minipage}[t]{0.17\columnwidth}\raggedright
-\strut
-\end{minipage} & \begin{minipage}[t]{0.17\columnwidth}\raggedright
-Smith, 4712\strut
-\end{minipage} & \begin{minipage}[t]{0.17\columnwidth}\raggedright
-\strut
-\end{minipage} & \begin{minipage}[t]{0.17\columnwidth}\raggedright
-Smith, 4923\strut
-\end{minipage}\tabularnewline
-\bottomrule
-\end{longtable}
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-3-10.png}
 
-\begin{quote}
-a
-\end{quote}
-
-\begin{longtable}[]{@{}l@{}}
-\toprule
-\endhead
-Smith, {10}\ldots{}151, {0}0\ldots{}01, {0}10\ldots{}0, {10}\ldots{}5,
-{0}0\ldots{}010\ldots{}0\tabularnewline
-\bottomrule
-\end{longtable}
-
-\begin{quote}
-b
-\end{quote}
-
-Fig. 3.10 A WAH-compressed bitmap.
+  \caption{A WAH-compressed bitmap.\label{fig-3-10}}
+\end{figure}
 
 Without compression, bitmap indexes are space-efficient only for very
 few distinct key values in the index. With effective compression, the
 size of bitmap indexes is about equal to that of traditional indexes
-with lists of references broken into segments, as shown in Figure 3.10.
+with lists of references broken into segments, as shown in \autoref{fig-3-10}.
 For example, with WAH compression, each reference requires at most one
 run of ``0'' sections plus a bitmap of 31 bits. A traditional
 representation with record identifiers might also require 64 bits per
@@ -888,7 +832,7 @@ and, when bitmaps are used to represent intermediate query results,
 during query execution. Bitmap intersection aids in conjunctive
 (``and'') query predicates, union in disjunctive (``or'') predicates.
 Note that range queries on integer keys can often be translated into
-disjunctions, e.g., ``... between 3 and 5'' is equivalent to
+disjunctions, e.g., ``\ldots between 3 and 5'' is equivalent to
 ``$\ldots = 3$ or $\ldots = 4$ or $\ldots = 5$.'' Thus, even if
 most query predicates are written as conjunctions rather than
 disjunctions, union operations are important for bitmaps and lists of
@@ -904,8 +848,8 @@ operation might require more memory and more effort than a bitmap.
 
 In theory, bitmaps can be employed for any Boolean property. In other
 words, a bit in a bitmap indicates whether or not a certain record has
-the property of interest. The discussion above and the example in Figure
-3.9 implicitly assume that this property is equality with a certain key
+the property of interest. The discussion above and the example in \autoref{fig-3-9}
+implicitly assume that this property is equality with a certain key
 value. Thus, there is a bitmap for each key value in an index indicating
 the records with those key values. Another scheme is based on modulo
 operations {[}112{]}. For example, if a column to be indexed is a 32-bit
@@ -995,39 +939,32 @@ modify it according to the actual, observed frequency of symbols in the
 uncompressed stream. Each such modification rotates nodes in the binary
 tree.
 
-\begin{quote}
-C
-
-B
-\end{quote}
-
-C
-
-\begin{quote}
-A B B C
-\end{quote}
-
-Fig. 3.11 Tree rotation in adaptive order-preserving Huffman
-compression.
-
-Figure 3.11, copied from {[}46{]}, shows a rotation in the binary tree
+\autoref{fig-3-11}, copied from {[}46{]}, shows a rotation in the binary tree
 central to encoding and decoding in order-preserving Huffman
 compression. The leaf nodes represent symbols and the root-to-leaf paths
 represent the encodings. With a left branch encoded by a 0 and a right
 branch by a 1, the symbols ``A,'' ``B,'' and ``C'' have encodings ``0,''
 ``10,'' and ``11,'' respectively. The branch nodes of the tree contain
 separator keys, very similar to separator keys in B-trees. The left tree
-in Figure3.11 is designed for relatively frequent ``A'' symbols. If the
+in \autoref{fig-3-11} is designed for relatively frequent ``A'' symbols. If the
 symbol ``C'' is particularly frequent, the encoding tree can be rotated
 into the right tree, such that the symbols ``A,'' ``B,'' and ``C'' have
 encodings ``00,'' ``01,'' and ``1,'' respectively. The rotation from the
-left tree in Figure 3.11 to the right tree is worthwhile if the
+left tree in \autoref{fig-3-11} to the right tree is worthwhile if the
 accumulated weight in leaf node C is higher than that in leaf node A,
 i.e., if effective compression is more important for leaf node C than
 for leaf node A. Note that the frequency of leaf node B is not relevant
 and the size of its encoding is not affected by the rotation, and that
 this tree transformation is not suitable to minimize the path to node B
 or the representation of B.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-3-11.png}
+
+  \caption{Tree rotation in adaptive order-preserving Huffman
+  compression.\label{fig-3-11}}
+\end{figure}
 
 Compression of B-tree child pointers may exploit the fact that
 neighboring nodes are likely to have been allocated in neighboring
@@ -1134,7 +1071,7 @@ split in a B-tree. While simple and promising, this idea has not been
 widely adopted. This pattern of ``self-similar'' data structures and
 algorithms can be applied at multiple levels of the memory hierarchy.
 
-Figure 3.12 shows the two kinds of nodes in an SB-tree. Both extents and
+\autoref{fig-3-12} shows the two kinds of nodes in an SB-tree. Both extents and
 pages are nodes in the sense that they may overflow and then are split
 in half. The child pointers in page 75.2 contain very similar values for
 page identifiers and thus are amenable to compression. When, for
@@ -1142,7 +1079,12 @@ example, page 93.4 must be split in response to an insertion, the entire
 extent 93 is split and multiple pages, e.g., 93.3--93.5, moved to a new
 extent.
 
-Fig. 3.12 Nodes in an SB-tree.
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{./media/fig-3-12.png}
+
+  \caption{Nodes in an SB-tree.\label{fig-3-12}}
+\end{figure}
 
 \begin{itemize}
 \item
@@ -1207,7 +1149,7 @@ Third, splitting a B-tree node and posting a new separator key in the
 node's parent is divided into two steps {[}81{]}. During the
 intermediate state, which may last a long time but ideally does not, the
 B-tree node looks similar to the ternary node in a 2-3-tree as shown in
-Figure 2.2. In other words, two separate steps split a full node in two
+\autoref{fig-2-2}. In other words, two separate steps split a full node in two
 and post a separator key in the parent node. For a short time, the new
 node is linked to the old neighbor, not its parent, giving rise to the
 name B\textsuperscript{link}-trees. As soon as convenient, e.g., during

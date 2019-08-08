@@ -22,7 +22,7 @@ DIRS = filter(
         os.listdir()))
 for d in DIRS:
     others = filter(
-        lambda p: p.endswith('.tex') and p != 'main.tex',
+        lambda p: p.startswith('fig') and p.endswith('.tex') and p != 'main.tex',
         os.listdir(d))
     for f in others:
         tf = ENV.latexmk(os.path.join(d, f[:-4] + '.pdf'), os.path.join(d, f))
